@@ -6,6 +6,19 @@
 
 ---
 
+## 🚨 快速解决方案（如果遇到构建错误）
+
+如果部署时遇到 `找不到 package.json` 的错误，请按以下步骤操作：
+
+1. 进入 Cloudflare Pages 项目设置
+2. 找到 **"Root directory"（根目录）** 字段
+3. 填写：`orbit_-ai-目标与心流追踪`
+4. 保存设置并重新部署
+
+**原因**：您的项目代码在子目录中，Cloudflare Pages 默认从仓库根目录查找文件。
+
+---
+
 ## 📋 兼容性详细分析
 
 ### ✅ 框架和技术栈
@@ -28,7 +41,17 @@
 
 ---
 
-## ⚠️ 注意事项
+## ⚠️ 重要提示：项目在子目录中
+
+**⚠️ 您的项目位于 `orbit_-ai-目标与心流追踪/` 子目录中，部署时必须设置根目录！**
+
+在 Cloudflare Pages 设置中，**必须**在 "Root directory"（根目录）字段填写：`orbit_-ai-目标与心流追踪`
+
+如果不设置根目录，会出现 `找不到 package.json` 的错误。
+
+---
+
+## ⚠️ 其他注意事项
 
 ### 1. index.html 中的开发配置
 `index.html` 文件包含了一些开发时的配置（importmap、Tailwind CDN），这些在构建后会由 Vite 处理，**不影响部署**。
@@ -57,13 +80,16 @@
    - 选择您的 Git 提供商（GitHub/GitLab/Bitbucket）
    - 授权并选择仓库
 
-3. **配置构建设置**
+3. **配置构建设置** ⚠️ **重要**
    ```
    项目名称: orbit-app（或您喜欢的名称）
    生产分支: main（或您的主分支）
+   根目录: orbit_-ai-目标与心流追踪  ⚠️ 必须设置！
    构建命令: npm run build
    构建输出目录: dist
    ```
+   
+   **⚠️ 关键步骤：** 由于项目在子目录中，必须在 "Root directory"（根目录）字段中填写 `orbit_-ai-目标与心流追踪`，否则会找不到 `package.json` 文件！
 
 4. **环境变量**（可选）
    - 本项目无需环境变量
@@ -105,11 +131,13 @@
 
 ```
 框架预设: None (或 Vite)
+根目录: orbit_-ai-目标与心流追踪  ⚠️ 必须设置此项！
 构建命令: npm run build
 输出目录: dist
-根目录: /（或 orbit_-ai-目标与心流追踪/ 如果从子目录部署）
 Node.js 版本: 18（或更高）
 ```
+
+**⚠️ 重要提示：** 根目录必须设置为 `orbit_-ai-目标与心流追踪`，这是最关键的一步！
 
 ### 环境变量（无需配置）
 - 本项目不需要任何环境变量
@@ -130,6 +158,19 @@ Node.js 版本: 18（或更高）
 ## 🔍 如果遇到问题
 
 ### 构建失败
+
+#### ❌ 错误：找不到 package.json
+如果看到类似错误：
+```
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory
+```
+
+**解决方法：**
+1. ✅ 在 Cloudflare Pages 项目设置中，找到 "Root directory"（根目录）字段
+2. ✅ 填写：`orbit_-ai-目标与心流追踪`
+3. ✅ 保存并重新部署
+
+#### 其他常见问题
 1. 确保 `package.json` 中所有依赖都已正确安装
 2. 检查 Node 版本是否 >= 18.0.0
 3. 查看构建日志中的错误信息
