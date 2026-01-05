@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Goal, MatrixQuadrant } from '../types';
-import { AlertCircle, Calendar, Clock, Trash2, CheckCircle2, Plus, Sun } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, Trash2, CheckCircle2, Plus, Sun, X, Trophy } from 'lucide-react';
 
 interface Props {
   goals: Goal[];
+  completedGoals: Goal[];
   onSelectGoal: (goal: Goal) => void;
   onDeleteGoal: (e: React.MouseEvent, id: string) => void;
   onAddToToday: (e: React.MouseEvent, id: string) => void;
@@ -15,11 +16,12 @@ const QuadrantCard: React.FC<{
   goals: Goal[];
   colorClass: string;
   icon: React.ReactNode;
-  onSelect: (g: Goal) => void;
-  onDelete: (e: React.MouseEvent, id: string) => void;
-  onAddToToday: (e: React.MouseEvent, id: string) => void;
-}> = ({ title, description, goals, colorClass, icon, onSelect, onDelete, onAddToToday }) => (
-  <div className={`flex flex-col h-full rounded-2xl border ${colorClass} bg-opacity-50 overflow-hidden`}>
+  onClick: () => void;
+}> = ({ title, description, goals, colorClass, icon, onClick }) => (
+  <div 
+    onClick={onClick}
+    className={`flex flex-col h-full rounded-2xl border ${colorClass} bg-opacity-50 overflow-hidden cursor-pointer hover:shadow-lg transition-all transform hover:scale-[1.02]`}
+  >
     <div className={`p-4 border-b ${colorClass} bg-white bg-opacity-60 flex items-center justify-between`}>
       <div>
         <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -31,128 +33,271 @@ const QuadrantCard: React.FC<{
         {goals.length}
       </span>
     </div>
-    <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-white bg-opacity-30 custom-scrollbar">
+    <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-white bg-opacity-30 custom-scrollbar">
       {goals.length === 0 && (
         <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
-          暂无目标。
+          点击查看详情
         </div>
       )}
-      {goals.map((goal) => {
+      {goals.slice(0, 3).map((goal) => {
         const completedCount = goal.subGoals.filter(s => s.isCompleted).length;
         const totalCount = goal.subGoals.length;
         const progress = totalCount === 0 ? 0 : (completedCount / totalCount) * 100;
         
-        // Check if ANY incomplete sub-goal is assigned to today
-        const todayStr = new Date().toISOString().split('T')[0];
-        const hasTasksToday = goal.subGoals.some(sg => !sg.isCompleted && sg.assignedDate === todayStr);
-        const allIncompleteAssigned = goal.subGoals.every(sg => sg.isCompleted || sg.assignedDate === todayStr);
-
         return (
           <div
             key={goal.id}
-            onClick={() => onSelect(goal)}
-            className={`bg-white p-3 rounded-xl shadow-sm border hover:shadow-md transition-all cursor-pointer group relative
-              ${hasTasksToday ? 'border-indigo-400 ring-1 ring-indigo-200' : 'border-gray-100'}
-            `}
+            className="bg-white p-2 rounded-lg shadow-sm border border-gray-100"
           >
-            {hasTasksToday && (
-               <div className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm z-10 flex items-center gap-1">
-                 <Sun size={10} /> 今天
-               </div>
-            )}
-
-            <div className="flex justify-between items-start mb-2 gap-2">
-              <h4 className="font-semibold text-gray-800 line-clamp-2 text-sm">{goal.title}</h4>
-              <div className="flex items-center gap-1 shrink-0">
-                {!allIncompleteAssigned && totalCount > completedCount && (
-                  <button
-                    onClick={(e) => onAddToToday(e, goal.id)}
-                    className="text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 p-1 rounded transition-all"
-                    title="将未完成子目标加入今天"
-                  >
-                    <Plus size={16} />
-                  </button>
-                )}
-                <button
-                  onClick={(e) => onDelete(e, goal.id)}
-                  className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-all opacity-0 group-hover:opacity-100"
-                  title="删除"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+            <h4 className="font-semibold text-gray-800 line-clamp-1 text-sm mb-1">{goal.title}</h4>
+            <div className="w-full bg-gray-100 rounded-full h-1">
               <div
-                className={`h-1.5 rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                className={`h-1 rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
                 style={{ width: `${progress}%` }}
               ></div>
-            </div>
-
-            <div className="flex justify-between items-center text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <CheckCircle2 size={12} /> {completedCount}/{totalCount}
-              </span>
-              {goal.deadline && (
-                <span className={`px-1.5 py-0.5 rounded ${new Date(goal.deadline) < new Date() ? 'bg-red-100 text-red-600' : 'bg-gray-100'}`}>
-                  {new Date(goal.deadline).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
-                </span>
-              )}
             </div>
           </div>
         );
       })}
+      {goals.length > 3 && (
+        <div className="text-center text-xs text-gray-400 pt-1">
+          还有 {goals.length - 3} 个目标...
+        </div>
+      )}
     </div>
   </div>
 );
 
-export const EisenhowerMatrix: React.FC<Props> = ({ goals, onSelectGoal, onDeleteGoal, onAddToToday }) => {
+const ExpandedQuadrantView: React.FC<{
+  title: string;
+  description: string;
+  goals: Goal[];
+  colorClass: string;
+  icon: React.ReactNode;
+  onClose: () => void;
+  onSelectGoal: (goal: Goal) => void;
+  onDeleteGoal: (e: React.MouseEvent, id: string) => void;
+  onAddToToday: (e: React.MouseEvent, id: string) => void;
+}> = ({ title, description, goals, colorClass, icon, onClose, onSelectGoal, onDeleteGoal, onAddToToday }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pb-20 md:pb-4">
+      <div className={`bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col ${colorClass} border-2`}>
+        {/* Header */}
+        <div className={`p-6 border-b ${colorClass} bg-opacity-20 flex items-center justify-between sticky top-0 z-10`}>
+          <div className="flex items-center gap-3">
+            {icon}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+              <p className="text-sm text-gray-600 mt-1">{description}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X size={24} className="text-gray-600" />
+          </button>
+        </div>
+        
+        {/* Scrollable Goals List */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+          {goals.length === 0 && (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
+              <p className="text-lg">暂无目标</p>
+            </div>
+          )}
+          {goals.map((goal) => {
+            const completedCount = goal.subGoals.filter(s => s.isCompleted).length;
+            const totalCount = goal.subGoals.length;
+            const progress = totalCount === 0 ? 0 : (completedCount / totalCount) * 100;
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const hasTasksToday = goal.subGoals.some(sg => !sg.isCompleted && sg.assignedDate === todayStr);
+            const allIncompleteAssigned = goal.subGoals.every(sg => sg.isCompleted || sg.assignedDate === todayStr);
+
+            return (
+              <div
+                key={goal.id}
+                onClick={() => {
+                  onSelectGoal(goal);
+                  onClose();
+                }}
+                className={`bg-white p-4 rounded-xl shadow-sm border hover:shadow-md transition-all cursor-pointer group relative
+                  ${hasTasksToday ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}
+                `}
+              >
+                {hasTasksToday && (
+                  <div className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full shadow-sm z-10 flex items-center gap-1">
+                    <Sun size={12} /> 今天
+                  </div>
+                )}
+
+                <div className="flex justify-between items-start mb-3 gap-2">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-800 text-base mb-1">{goal.title}</h4>
+                    {goal.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">{goal.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!allIncompleteAssigned && totalCount > completedCount && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddToToday(e, goal.id);
+                        }}
+                        className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded transition-all"
+                        title="将未完成子目标加入今天"
+                      >
+                        <Plus size={18} />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteGoal(e, goal.id);
+                      }}
+                      className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded transition-all opacity-0 group-hover:opacity-100"
+                      title="删除"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                  <div
+                    className={`h-2 rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+
+                <div className="flex justify-between items-center text-sm text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 size={14} /> {completedCount}/{totalCount} 已完成
+                  </span>
+                  {goal.deadline && (
+                    <span className={`px-2 py-1 rounded ${new Date(goal.deadline) < new Date() ? 'bg-red-100 text-red-600' : 'bg-gray-100'}`}>
+                      {new Date(goal.deadline).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const EisenhowerMatrix: React.FC<Props> = ({ goals, completedGoals, onSelectGoal, onDeleteGoal, onAddToToday }) => {
+  const [expandedQuadrant, setExpandedQuadrant] = useState<MatrixQuadrant | 'completed' | null>(null);
+  
   const getGoals = (q: MatrixQuadrant) => goals.filter((g) => g.quadrant === q);
 
+  const quadrantConfigs = [
+    {
+      quadrant: MatrixQuadrant.DoFirst,
+      title: "重要紧急",
+      description: "立即去做 (Do First)",
+      colorClass: "border-rose-200 bg-rose-50",
+      icon: <AlertCircle className="text-rose-500" size={18} />
+    },
+    {
+      quadrant: MatrixQuadrant.Schedule,
+      title: "重要 不紧急",
+      description: "计划去做 (Schedule)",
+      colorClass: "border-blue-200 bg-blue-50",
+      icon: <Calendar className="text-blue-500" size={18} />
+    },
+    {
+      quadrant: MatrixQuadrant.Delegate,
+      title: "不重要紧急",
+      description: "授权/委派 (Delegate)",
+      colorClass: "border-amber-200 bg-amber-50",
+      icon: <Clock className="text-amber-500" size={18} />
+    },
+    {
+      quadrant: MatrixQuadrant.Eliminate,
+      title: "不重要不紧急",
+      description: "删减/稍后 (Eliminate)",
+      colorClass: "border-slate-200 bg-slate-50",
+      icon: <Trash2 className="text-slate-500" size={18} />
+    }
+  ];
+
+  const handleQuadrantClick = (quadrant: MatrixQuadrant) => {
+    setExpandedQuadrant(quadrant);
+  };
+
+  const handleCompletedClick = () => {
+    setExpandedQuadrant('completed');
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full min-h-[600px] pb-10 md:pb-0">
-      <QuadrantCard
-        title="重要紧急"
-        description="立即去做 (Do First)"
-        goals={getGoals(MatrixQuadrant.DoFirst)}
-        colorClass="border-rose-200 bg-rose-50"
-        icon={<AlertCircle className="text-rose-500" size={18} />}
-        onSelect={onSelectGoal}
-        onDelete={onDeleteGoal}
-        onAddToToday={onAddToToday}
-      />
-      <QuadrantCard
-        title="重要 不紧急"
-        description="计划去做 (Schedule)"
-        goals={getGoals(MatrixQuadrant.Schedule)}
-        colorClass="border-blue-200 bg-blue-50"
-        icon={<Calendar className="text-blue-500" size={18} />}
-        onSelect={onSelectGoal}
-        onDelete={onDeleteGoal}
-        onAddToToday={onAddToToday}
-      />
-      <QuadrantCard
-        title="不重要紧急"
-        description="授权/委派 (Delegate)"
-        goals={getGoals(MatrixQuadrant.Delegate)}
-        colorClass="border-amber-200 bg-amber-50"
-        icon={<Clock className="text-amber-500" size={18} />}
-        onSelect={onSelectGoal}
-        onDelete={onDeleteGoal}
-        onAddToToday={onAddToToday}
-      />
-      <QuadrantCard
-        title="不重要不紧急"
-        description="删减/稍后 (Eliminate)"
-        goals={getGoals(MatrixQuadrant.Eliminate)}
-        colorClass="border-slate-200 bg-slate-50"
-        icon={<Trash2 className="text-slate-500" size={18} />}
-        onSelect={onSelectGoal}
-        onDelete={onDeleteGoal}
-        onAddToToday={onAddToToday}
-      />
-    </div>
+    <>
+      <div className="space-y-4 h-full pb-10 md:pb-0">
+        {/* 四个象限网格 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[600px]">
+          {quadrantConfigs.map((config) => (
+            <QuadrantCard
+              key={config.quadrant}
+              title={config.title}
+              description={config.description}
+              goals={getGoals(config.quadrant)}
+              colorClass={config.colorClass}
+              icon={config.icon}
+              onClick={() => handleQuadrantClick(config.quadrant)}
+            />
+          ))}
+        </div>
+
+        {/* 已完成板块 */}
+        {completedGoals.length > 0 && (
+          <div className="mt-6">
+            <QuadrantCard
+              title="已完成"
+              description="已完成复盘的目标"
+              goals={completedGoals}
+              colorClass="border-green-200 bg-green-50"
+              icon={<Trophy className="text-green-500" size={18} />}
+              onClick={handleCompletedClick}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 展开的象限视图 */}
+      {expandedQuadrant && expandedQuadrant !== 'completed' && (
+        <ExpandedQuadrantView
+          title={quadrantConfigs.find(c => c.quadrant === expandedQuadrant)?.title || ''}
+          description={quadrantConfigs.find(c => c.quadrant === expandedQuadrant)?.description || ''}
+          goals={getGoals(expandedQuadrant)}
+          colorClass={quadrantConfigs.find(c => c.quadrant === expandedQuadrant)?.colorClass || ''}
+          icon={quadrantConfigs.find(c => c.quadrant === expandedQuadrant)?.icon || <></>}
+          onClose={() => setExpandedQuadrant(null)}
+          onSelectGoal={onSelectGoal}
+          onDeleteGoal={onDeleteGoal}
+          onAddToToday={onAddToToday}
+        />
+      )}
+
+      {/* 已完成的展开视图 */}
+      {expandedQuadrant === 'completed' && (
+        <ExpandedQuadrantView
+          title="已完成"
+          description="已完成复盘的目标"
+          goals={completedGoals}
+          colorClass="border-green-200 bg-green-50"
+          icon={<Trophy className="text-green-500" size={18} />}
+          onClose={() => setExpandedQuadrant(null)}
+          onSelectGoal={onSelectGoal}
+          onDeleteGoal={onDeleteGoal}
+          onAddToToday={onAddToToday}
+        />
+      )}
+    </>
   );
 };

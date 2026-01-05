@@ -354,7 +354,8 @@ const App: React.FC = () => {
             <main className="flex-1 overflow-y-auto p-4 md:p-6">
               {currentView === 'matrix' && (
                 <EisenhowerMatrix 
-                  goals={goals} 
+                  goals={goals.filter(g => !g.retrospective || g.retrospective.trim() === '')}
+                  completedGoals={goals.filter(g => g.retrospective && g.retrospective.trim() !== '')}
                   onSelectGoal={(g) => setSelectedGoalId(g.id)}
                   onDeleteGoal={handleDeleteGoal}
                   onAddToToday={handleAddToToday}
