@@ -126,42 +126,45 @@ const ExpandedQuadrantView: React.FC<{
                   ${hasTasksToday ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}
                 `}
               >
-                <div className="flex justify-between items-start mb-3 gap-2 relative">
+                <div className="flex justify-between items-start mb-3 gap-3 relative">
                   <div className="flex-1 min-w-0 pr-2">
                     <h4 className="font-semibold text-gray-800 text-base mb-1">{goal.title}</h4>
                     {goal.description && (
                       <p className="text-sm text-gray-600 line-clamp-2">{goal.description}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 flex-shrink-0 z-20 relative">
+                  {/* 按钮区域 - 确保始终显示且不被压缩 */}
+                  <div className="flex items-center gap-2 shrink-0 z-30 relative" style={{ minWidth: '110px', flexShrink: 0 }}>
                     {hasTasksToday && (
-                      <div className="absolute -top-8 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full shadow-sm flex items-center gap-1 whitespace-nowrap">
+                      <div className="absolute -top-8 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full shadow-sm flex items-center gap-1 whitespace-nowrap z-40">
                         <Sun size={12} /> 今天
                       </div>
                     )}
-                    {(!allIncompleteAssigned || totalCount === 0) && totalCount >= completedCount && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddToToday(e, goal.id);
-                        }}
-                        className="text-gray-600 hover:text-indigo-600 active:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-gray-200"
-                        title="将未完成子目标加入今天"
-                        aria-label="将未完成子目标加入今天"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    )}
+                    {/* 添加到今天按钮 - 必须显示 */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
+                        onAddToToday(e, goal.id);
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 active:text-indigo-700 hover:bg-indigo-100 active:bg-indigo-100 p-3 rounded-lg transition-all touch-manipulation w-[48px] h-[48px] flex items-center justify-center bg-indigo-50 border-2 border-indigo-400 shadow-md"
+                      title="将未完成子目标加入今天"
+                      aria-label="将未完成子目标加入今天"
+                    >
+                      <Plus size={24} strokeWidth={3} />
+                    </button>
+                    {/* 删除按钮 - 必须显示 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
                         onDeleteGoal(e, goal.id);
                       }}
-                      className="text-gray-600 hover:text-red-500 active:text-red-500 hover:bg-red-50 active:bg-red-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-gray-200"
+                      className="text-red-600 hover:text-red-700 active:text-red-700 hover:bg-red-100 active:bg-red-100 p-3 rounded-lg transition-all touch-manipulation w-[48px] h-[48px] flex items-center justify-center bg-red-50 border-2 border-red-400 shadow-md"
                       title="删除目标"
                       aria-label="删除目标"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={24} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
