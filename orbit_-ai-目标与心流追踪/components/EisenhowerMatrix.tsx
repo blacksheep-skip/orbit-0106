@@ -133,21 +133,22 @@ const ExpandedQuadrantView: React.FC<{
                 )}
 
                 <div className="flex justify-between items-start mb-3 gap-2">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-800 text-base mb-1">{goal.title}</h4>
                     {goal.description && (
                       <p className="text-sm text-gray-600 line-clamp-2">{goal.description}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0 flex-shrink-0 ml-2">
                     {!allIncompleteAssigned && totalCount > completedCount && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onAddToToday(e, goal.id);
                         }}
-                        className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded transition-all"
+                        className="text-gray-500 hover:text-indigo-600 active:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-50 p-2 rounded transition-all touch-manipulation"
                         title="将未完成子目标加入今天"
+                        aria-label="将未完成子目标加入今天"
                       >
                         <Plus size={18} />
                       </button>
@@ -157,8 +158,9 @@ const ExpandedQuadrantView: React.FC<{
                         e.stopPropagation();
                         onDeleteGoal(e, goal.id);
                       }}
-                      className="text-gray-500 hover:text-red-500 hover:bg-red-50 p-2 rounded transition-all"
+                      className="text-gray-500 hover:text-red-500 active:text-red-500 hover:bg-red-50 active:bg-red-50 p-2 rounded transition-all touch-manipulation"
                       title="删除目标"
+                      aria-label="删除目标"
                     >
                       <Trash2 size={18} />
                     </button>
