@@ -142,6 +142,30 @@ const App: React.FC = () => {
     handleUpdateGoal({ ...goal, subGoals: updatedSubGoals });
   };
 
+  // Add a scheduled task to a specific date from calendar
+  const handleAddScheduledTask = (dateKey: string, title: string, desc?: string) => {
+    const newGoalId = crypto.randomUUID();
+    const newSubGoalId = crypto.randomUUID();
+    const newGoal: Goal = {
+      id: newGoalId,
+      title: title,
+      description: desc || '',
+      quadrant: MatrixQuadrant.Schedule,
+      deadline: new Date(dateKey).toISOString(),
+      subGoals: [
+        {
+          id: newSubGoalId,
+          title: title,
+          isCompleted: false,
+          assignedDate: dateKey,
+          logs: []
+        }
+      ],
+      createdAt: Date.now()
+    };
+    setGoals([...goals, newGoal]);
+  };
+
   const handleToggleSubGoalInToday = (goalId: string, subGoalId: string) => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
@@ -371,7 +395,10 @@ const App: React.FC = () => {
                 />
               )}
               {currentView === 'calendar' && (
-                <CalendarView goals={goals} />
+                <CalendarView 
+                  goals={goals} 
+                  onAddScheduledTask={handleAddScheduledTask}
+                />
               )}
               {currentView === 'settings' && (
                 <SettingsView 
