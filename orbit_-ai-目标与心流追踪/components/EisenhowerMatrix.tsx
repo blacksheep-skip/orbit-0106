@@ -126,27 +126,26 @@ const ExpandedQuadrantView: React.FC<{
                   ${hasTasksToday ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}
                 `}
               >
-                {hasTasksToday && (
-                  <div className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full shadow-sm z-10 flex items-center gap-1">
-                    <Sun size={12} /> 今天
-                  </div>
-                )}
-
-                <div className="flex justify-between items-start mb-3 gap-2">
-                  <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start mb-3 gap-2 relative">
+                  <div className="flex-1 min-w-0 pr-2">
                     <h4 className="font-semibold text-gray-800 text-base mb-1">{goal.title}</h4>
                     {goal.description && (
                       <p className="text-sm text-gray-600 line-clamp-2">{goal.description}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 flex-shrink-0 ml-2 z-10 relative">
-                    {!allIncompleteAssigned && totalCount > completedCount && (
+                  <div className="flex items-center gap-1 shrink-0 flex-shrink-0 z-20 relative">
+                    {hasTasksToday && (
+                      <div className="absolute -top-8 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full shadow-sm flex items-center gap-1 whitespace-nowrap">
+                        <Sun size={12} /> 今天
+                      </div>
+                    )}
+                    {(!allIncompleteAssigned || totalCount === 0) && totalCount >= completedCount && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onAddToToday(e, goal.id);
                         }}
-                        className="text-gray-600 hover:text-indigo-600 active:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className="text-gray-600 hover:text-indigo-600 active:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-gray-200"
                         title="将未完成子目标加入今天"
                         aria-label="将未完成子目标加入今天"
                       >
@@ -158,7 +157,7 @@ const ExpandedQuadrantView: React.FC<{
                         e.stopPropagation();
                         onDeleteGoal(e, goal.id);
                       }}
-                      className="text-gray-600 hover:text-red-500 active:text-red-500 hover:bg-red-50 active:bg-red-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="text-gray-600 hover:text-red-500 active:text-red-500 hover:bg-red-50 active:bg-red-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-gray-200"
                       title="删除目标"
                       aria-label="删除目标"
                     >
