@@ -139,18 +139,18 @@ const ExpandedQuadrantView: React.FC<{
                       <p className="text-sm text-gray-600 line-clamp-2">{goal.description}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 flex-shrink-0 ml-2">
+                  <div className="flex items-center gap-1 shrink-0 flex-shrink-0 ml-2 z-10 relative">
                     {!allIncompleteAssigned && totalCount > completedCount && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onAddToToday(e, goal.id);
                         }}
-                        className="text-gray-500 hover:text-indigo-600 active:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-50 p-2 rounded transition-all touch-manipulation"
+                        className="text-gray-600 hover:text-indigo-600 active:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
                         title="将未完成子目标加入今天"
                         aria-label="将未完成子目标加入今天"
                       >
-                        <Plus size={18} />
+                        <Plus size={20} />
                       </button>
                     )}
                     <button
@@ -158,11 +158,11 @@ const ExpandedQuadrantView: React.FC<{
                         e.stopPropagation();
                         onDeleteGoal(e, goal.id);
                       }}
-                      className="text-gray-500 hover:text-red-500 active:text-red-500 hover:bg-red-50 active:bg-red-50 p-2 rounded transition-all touch-manipulation"
+                      className="text-gray-600 hover:text-red-500 active:text-red-500 hover:bg-red-50 active:bg-red-50 p-2.5 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
                       title="删除目标"
                       aria-label="删除目标"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>
