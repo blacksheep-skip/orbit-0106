@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Goal, SubGoal, GoalLog, MatrixQuadrant } from '../types';
-import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2 } from 'lucide-react';
 import { formatGoalForExport } from '../services/geminiService';
 
 interface Props {
@@ -104,6 +104,18 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
       return sg;
     });
     onUpdateGoal({ ...goal, subGoals: updatedSubGoals });
+  };
+
+  const handleDeleteSubGoal = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("确定要删除这个子目标吗？")) {
+      const updatedSubGoals = goal.subGoals.filter(sg => sg.id !== id);
+      onUpdateGoal({ ...goal, subGoals: updatedSubGoals });
+      // If the deleted subgoal was active, switch to first one or null
+      if (activeSubGoalId === id) {
+        setActiveSubGoalId(updatedSubGoals.length > 0 ? updatedSubGoals[0].id : null);
+      }
+    }
   };
 
   const handleAddLog = () => {
@@ -257,6 +269,14 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                     title={isAssignedToday ? "移出今天" : "加入今天"}
                   >
                     {isAssignedToday ? <Sun size={16} fill="currentColor" /> : <Sun size={16} />}
+                  </button>
+
+                  <button
+                    onClick={(e) => handleDeleteSubGoal(sg.id, e)}
+                    className="p-1.5 rounded-lg transition-colors shrink-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                    title="删除子目标"
+                  >
+                    <Trash2 size={16} />
                   </button>
 
                   {activeSubGoalId === sg.id && <ChevronRight size={16} className="text-indigo-400" />}

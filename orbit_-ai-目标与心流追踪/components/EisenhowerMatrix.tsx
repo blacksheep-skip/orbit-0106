@@ -146,7 +146,7 @@ const ExpandedQuadrantView: React.FC<{
                           e.stopPropagation();
                           onAddToToday(e, goal.id);
                         }}
-                        className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded transition-all"
+                        className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded transition-all"
                         title="将未完成子目标加入今天"
                       >
                         <Plus size={18} />
@@ -157,8 +157,8 @@ const ExpandedQuadrantView: React.FC<{
                         e.stopPropagation();
                         onDeleteGoal(e, goal.id);
                       }}
-                      className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded transition-all opacity-0 group-hover:opacity-100"
-                      title="删除"
+                      className="text-gray-500 hover:text-red-500 hover:bg-red-50 p-2 rounded transition-all"
+                      title="删除目标"
                     >
                       <Trash2 size={18} />
                     </button>
