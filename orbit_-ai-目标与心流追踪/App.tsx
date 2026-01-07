@@ -142,30 +142,6 @@ const App: React.FC = () => {
     handleUpdateGoal({ ...goal, subGoals: updatedSubGoals });
   };
 
-  // Add a scheduled task to a specific date from calendar
-  const handleAddScheduledTask = (dateKey: string, title: string, desc?: string) => {
-    const newGoalId = crypto.randomUUID();
-    const newSubGoalId = crypto.randomUUID();
-    const newGoal: Goal = {
-      id: newGoalId,
-      title: title,
-      description: desc || '',
-      quadrant: MatrixQuadrant.Schedule,
-      deadline: new Date(dateKey).toISOString(),
-      subGoals: [
-        {
-          id: newSubGoalId,
-          title: title,
-          isCompleted: false,
-          assignedDate: dateKey,
-          logs: []
-        }
-      ],
-      createdAt: Date.now()
-    };
-    setGoals([...goals, newGoal]);
-  };
-
   const handleToggleSubGoalInToday = (goalId: string, subGoalId: string) => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
@@ -378,8 +354,7 @@ const App: React.FC = () => {
             <main className="flex-1 overflow-y-auto p-4 md:p-6">
               {currentView === 'matrix' && (
                 <EisenhowerMatrix 
-                  goals={goals.filter(g => !g.retrospective || g.retrospective.trim() === '')}
-                  completedGoals={goals.filter(g => g.retrospective && g.retrospective.trim() !== '')}
+                  goals={goals} 
                   onSelectGoal={(g) => setSelectedGoalId(g.id)}
                   onDeleteGoal={handleDeleteGoal}
                   onAddToToday={handleAddToToday}
@@ -395,10 +370,7 @@ const App: React.FC = () => {
                 />
               )}
               {currentView === 'calendar' && (
-                <CalendarView 
-                  goals={goals} 
-                  onAddScheduledTask={handleAddScheduledTask}
-                />
+                <CalendarView goals={goals} />
               )}
               {currentView === 'settings' && (
                 <SettingsView 
