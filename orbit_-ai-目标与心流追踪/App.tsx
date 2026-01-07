@@ -148,6 +148,8 @@ const App: React.FC = () => {
 
     const updatedSubGoals = goal.subGoals.map(sg => {
       if (sg.id === subGoalId) {
+        // When marking as completed, use current local time
+        // Date.now() is fine, but we'll ensure it's treated as local time when displayed
         return { 
           ...sg, 
           isCompleted: !sg.isCompleted,

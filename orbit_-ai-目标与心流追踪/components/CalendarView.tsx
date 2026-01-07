@@ -27,8 +27,11 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
     goals.forEach(goal => {
       goal.subGoals.forEach(sg => {
         if (sg.isCompleted && sg.completedAt) {
-          // Use local time to avoid timezone issues
+          // Date.now() returns milliseconds since epoch
+          // new Date(timestamp) creates a date in local timezone
+          // Use getFullYear(), getMonth(), getDate() which return local time values
           const completedDate = new Date(sg.completedAt);
+          // Directly use local date components - these are already in local time
           const dateKey = toDateKey(completedDate);
           const existing = map.get(dateKey) || [];
           existing.push({ goalTitle: goal.title, subGoal: sg });
@@ -183,10 +186,10 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row gap-6">
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col md:flex-row gap-4 md:gap-6 overflow-hidden">
+      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden min-h-0">
         {/* Calendar Header */}
-        <div className="p-4 flex items-center justify-between border-b border-gray-100">
+        <div className="p-4 flex items-center justify-between border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-4">
              <h2 className="text-lg font-bold text-gray-800">
                {currentDate.getFullYear()}年 {currentDate.getMonth() + 1}月
@@ -205,7 +208,7 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
         </div>
 
         {/* Days Header */}
-        <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50">
+        <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50 shrink-0">
           {['日', '一', '二', '三', '四', '五', '六'].map(day => (
             <div key={day} className="py-2 text-center text-xs font-semibold text-gray-500">
               {day}
@@ -214,24 +217,26 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
           <div className="grid grid-cols-7 auto-rows-fr">
             {renderCalendarDays()}
           </div>
         </div>
       </div>
 
-      {/* Side Panel: Selected Date Details */}
-      <div className="w-full md:w-80 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col overflow-hidden">
-         <h3 className="font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100 flex items-center gap-2 shrink-0">
+      {/* Side Panel: Selected Date Details - 手机端固定在底部，桌面端在右侧 */}
+      <div className="w-full md:w-80 bg-white rounded-2xl shadow-sm border-2 border-indigo-200 flex flex-col overflow-hidden shrink-0 md:max-h-full" style={{ maxHeight: '60vh' }}>
+         <h3 className="font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2 shrink-0 px-4 pt-4">
            <span className="text-2xl text-indigo-600">{selectedDate.getDate()}</span>
            <span className="text-sm font-normal text-gray-500">
              {selectedDate.toLocaleDateString('zh-CN', { month: 'long', weekday: 'long' })}
            </span>
          </h3>
 
-         {/* Add scheduled task - Always visible */}
-         <form onSubmit={handleAdd} className="space-y-2 mb-4 shrink-0 border-b border-gray-100 pb-4">
+         {/* Add scheduled task - Always visible and prominent */}
+         <div className="px-4 shrink-0 border-b border-gray-100 pb-4 mb-4">
+           <p className="text-xs font-semibold text-indigo-600 mb-2">添加待办事项</p>
+           <form onSubmit={handleAdd} className="space-y-2">
            <input
              value={newTaskTitle}
              onChange={e => setNewTaskTitle(e.target.value)}
@@ -244,16 +249,17 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
              placeholder="可选描述"
              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none h-16 resize-none"
            />
-           <button
-             type="submit"
-             disabled={!newTaskTitle.trim()}
-             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
-           >
-             <Plus size={18} /> 添加到 {selectedDate.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
-           </button>
-         </form>
+             <button
+               type="submit"
+               disabled={!newTaskTitle.trim()}
+               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
+             >
+               <Plus size={18} /> 添加到 {selectedDate.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+             </button>
+           </form>
+         </div>
 
-         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
+         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 px-4 pb-4">
            {selectedScheduled.length === 0 && selectedDateTasks.length === 0 ? (
             <div className="text-center py-6 text-gray-400 text-sm">
               <p>这一天还没有计划或完成记录</p>
