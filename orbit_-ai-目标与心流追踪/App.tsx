@@ -185,6 +185,47 @@ const App: React.FC = () => {
       }));
   };
 
+  // Helper to get local date string (YYYY-MM-DD) without timezone issues
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Add scheduled task for a specific date
+  const handleAddScheduledTask = (dateKey: string, title: string, desc?: string) => {
+    // Find max todayIndex for the target date
+    let maxIndex = 0;
+    goals.forEach(g => {
+      g.subGoals.forEach(sg => {
+        if (sg.assignedDate === dateKey && (sg.todayIndex || 0) > maxIndex) {
+          maxIndex = sg.todayIndex || 0;
+        }
+      });
+    });
+
+    // Create a new goal for scheduled tasks
+    const newGoal: Goal = {
+      id: crypto.randomUUID(),
+      title: desc || '计划任务',
+      description: desc || '',
+      quadrant: MatrixQuadrant.Schedule,
+      deadline: new Date(dateKey + 'T23:59:59').toISOString(),
+      subGoals: [{
+        id: crypto.randomUUID(),
+        title: title,
+        isCompleted: false,
+        assignedDate: dateKey,
+        todayIndex: maxIndex + 1,
+        logs: []
+      }],
+      createdAt: Date.now()
+    };
+
+    setGoals([...goals, newGoal]);
+  };
+
   // --- CSV Import Logic ---
   const mapQuadrantFromText = (text: string): MatrixQuadrant => {
     const t = text.trim();
@@ -354,7 +395,8 @@ const App: React.FC = () => {
             <main className="flex-1 overflow-y-auto p-4 md:p-6">
               {currentView === 'matrix' && (
                 <EisenhowerMatrix 
-                  goals={goals} 
+                  goals={goals.filter(g => !g.retrospective || g.retrospective.trim() === '')}
+                  completedGoals={goals.filter(g => g.retrospective && g.retrospective.trim() !== '')}
                   onSelectGoal={(g) => setSelectedGoalId(g.id)}
                   onDeleteGoal={handleDeleteGoal}
                   onAddToToday={handleAddToToday}
@@ -370,7 +412,7 @@ const App: React.FC = () => {
                 />
               )}
               {currentView === 'calendar' && (
-                <CalendarView goals={goals} />
+                <CalendarView goals={goals} onAddScheduledTask={handleAddScheduledTask} />
               )}
               {currentView === 'settings' && (
                 <SettingsView 
