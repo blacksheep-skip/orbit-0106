@@ -8,6 +8,7 @@ interface Props {
 }
 
 export const Sidebar: React.FC<Props> = ({ currentView, onChangeView, todayCount }) => {
+  const BUILD_TAG = 'build-2026-01-07-1';
   const menuItems: { 
     id: 'today' | 'matrix' | 'calendar' | 'settings'; 
     label: string; 
@@ -54,7 +55,7 @@ export const Sidebar: React.FC<Props> = ({ currentView, onChangeView, todayCount
 
         <div className="p-4 border-t border-gray-100">
           <div className="text-xs text-gray-400 text-center">
-            © Orbit 2024 · v0.2.0
+            © Orbit 2024 · v0.2.0 · {BUILD_TAG}
           </div>
         </div>
       </div>
