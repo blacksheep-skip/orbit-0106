@@ -7,6 +7,7 @@ import { CalendarView } from './components/CalendarView';
 import { SettingsView } from './components/SettingsView';
 import { Goal, MatrixQuadrant } from './types';
 import { PlusCircle, Upload } from 'lucide-react';
+import { getLocalDateKey } from './utils/date';
 
 const INITIAL_GOALS: Goal[] = [
   {
@@ -103,7 +104,7 @@ const App: React.FC = () => {
   // Add ALL incomplete sub-goals of this goal to today
   const handleAddToToday = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateKey();
     
     // Find current max index to append to end
     let maxIndex = 0;
@@ -326,7 +327,7 @@ const App: React.FC = () => {
   const selectedGoal = goals.find(g => g.id === selectedGoalId);
   
   // Count sub-goals for today
-  const todayDateKey = new Date().toISOString().split('T')[0];
+  const todayDateKey = getLocalDateKey();
   const todaySubGoalsCount = goals.reduce((acc, goal) => {
     return acc + goal.subGoals.filter(sg => sg.assignedDate === todayDateKey && !sg.isCompleted).length;
   }, 0);

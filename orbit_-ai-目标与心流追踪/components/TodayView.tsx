@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Goal, SubGoal, MatrixQuadrant } from '../types';
 import { CheckSquare, Square, CalendarOff, ArrowRight, GripVertical } from 'lucide-react';
+import { getLocalDateKey } from '../utils/date';
 
 interface Props {
   goals: Goal[];
@@ -37,7 +38,7 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
 
   // Re-flatten tasks whenever goals change
   useEffect(() => {
-      const todayDateStr = new Date().toISOString().split('T')[0];
+      const todayDateStr = getLocalDateKey();
       const tasks: { goal: Goal, subGoal: SubGoal }[] = [];
       
       goals.forEach(g => {

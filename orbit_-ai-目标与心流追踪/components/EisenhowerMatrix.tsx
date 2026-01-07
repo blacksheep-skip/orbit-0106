@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Goal, MatrixQuadrant } from '../types';
 import { AlertCircle, Calendar, Clock, Trash2, CheckCircle2, Plus, Sun, X, Trophy } from 'lucide-react';
+import { getLocalDateKey } from '../utils/date';
 
 interface Props {
   goals: Goal[];
@@ -111,7 +112,7 @@ const ExpandedQuadrantView: React.FC<{
             const totalCount = goal.subGoals.length;
             const progress = totalCount === 0 ? 0 : (completedCount / totalCount) * 100;
             
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getLocalDateKey();
             const hasTasksToday = goal.subGoals.some(sg => !sg.isCompleted && sg.assignedDate === todayStr);
             const allIncompleteAssigned = goal.subGoals.every(sg => sg.isCompleted || sg.assignedDate === todayStr);
 

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Goal, SubGoal, GoalLog, MatrixQuadrant } from '../types';
 import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2 } from 'lucide-react';
 import { formatGoalForExport } from '../services/geminiService';
+import { getLocalDateKey } from '../utils/date';
 
 interface Props {
   goal: Goal;
@@ -34,7 +35,7 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
   const [copyFeedback, setCopyFeedback] = useState(false);
 
   const activeSubGoal = goal.subGoals.find(sg => sg.id === activeSubGoalId);
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateKey();
 
   useEffect(() => {
     if (logContainerRef.current) {

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Goal, SubGoal } from '../types';
 import { ChevronLeft, ChevronRight, CheckCircle2, Download, Plus } from 'lucide-react';
+import { getLocalDateKey } from '../utils/date';
 
 interface Props {
   goals: Goal[];
@@ -12,13 +13,11 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Helper to normalize date to YYYY-MM-DD for comparison (using local time)
   const toDateKey = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return getLocalDateKey(date);
   };
 
   const completedMap = useMemo(() => {
@@ -138,6 +137,20 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
              `}>
                {d}
              </span>
+             {isSelected && (
+               <button
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setSelectedDate(date);
+                   setIsAddModalOpen(true);
+                 }}
+                 className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+                 title="为这一天添加待办"
+                 aria-label="为这一天添加待办"
+               >
+                 <Plus size={16} />
+               </button>
+             )}
              <div className="flex items-center gap-1">
                {scheduled.length > 0 && (
                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded-full">
@@ -183,6 +196,7 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
     onAddScheduledTask(selectedDateKey, newTaskTitle.trim(), newTaskDesc.trim() || undefined);
     setNewTaskTitle('');
     setNewTaskDesc('');
+    setIsAddModalOpen(false);
   };
 
   return (
@@ -224,7 +238,7 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
         </div>
       </div>
 
-      {/* Side Panel: Selected Date Details - 手机端固定在底部，桌面端在右侧 */}
+      {/* Side Panel: Selected Date Details - 手机端在下方，桌面端在右侧 */}
       <div className="w-full md:w-80 bg-white rounded-2xl shadow-sm border-2 border-indigo-200 flex flex-col overflow-hidden shrink-0 md:max-h-full" style={{ maxHeight: '60vh' }}>
          <h3 className="font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2 shrink-0 px-4 pt-4">
            <span className="text-2xl text-indigo-600">{selectedDate.getDate()}</span>
@@ -233,30 +247,11 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
            </span>
          </h3>
 
-         {/* Add scheduled task - Always visible and prominent */}
-         <div className="px-4 shrink-0 border-b border-gray-100 pb-4 mb-4">
-           <p className="text-xs font-semibold text-indigo-600 mb-2">添加待办事项</p>
-           <form onSubmit={handleAdd} className="space-y-2">
-           <input
-             value={newTaskTitle}
-             onChange={e => setNewTaskTitle(e.target.value)}
-             placeholder="为这一天添加待办事项"
-             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-           />
-           <textarea
-             value={newTaskDesc}
-             onChange={e => setNewTaskDesc(e.target.value)}
-             placeholder="可选描述"
-             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none h-16 resize-none"
-           />
-             <button
-               type="submit"
-               disabled={!newTaskTitle.trim()}
-               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
-             >
-               <Plus size={18} /> 添加到 {selectedDate.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
-             </button>
-           </form>
+         {/* Hint for mobile */}
+         <div className="px-4 shrink-0 border-b border-gray-100 pb-3 mb-3">
+           <p className="text-xs text-gray-500">
+             选中日期后，点击日历格子右上角的 <span className="inline-flex items-center justify-center w-5 h-5 bg-indigo-600 text-white rounded-full align-middle mx-1">+</span> 添加待办
+           </p>
          </div>
 
          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 px-4 pb-4">
@@ -308,6 +303,48 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
            )}
          </div>
       </div>
+
+      {/* Add Task Modal (mobile-friendly) */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pb-20 md:pb-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-900">
+                添加到 {selectedDate.toLocaleDateString('zh-CN')}
+              </h3>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-100"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleAdd} className="space-y-3">
+              <input
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                placeholder="待办标题（必填）"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                autoFocus
+              />
+              <textarea
+                value={newTaskDesc}
+                onChange={e => setNewTaskDesc(e.target.value)}
+                placeholder="可选描述"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none h-20 resize-none"
+              />
+              <button
+                type="submit"
+                disabled={!newTaskTitle.trim()}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <Plus size={18} /> 添加
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
