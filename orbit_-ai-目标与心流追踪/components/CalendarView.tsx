@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Goal, SubGoal } from '../types';
 import { ChevronLeft, ChevronRight, CheckCircle2, Download, Plus } from 'lucide-react';
 import { getLocalDateKey } from '../utils/date';
@@ -14,6 +14,7 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   // Helper to normalize date to YYYY-MM-DD for comparison (using local time)
   const toDateKey = (date: Date) => {
@@ -66,6 +67,35 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const shiftSelectedDate = (deltaDays: number) => {
+    const next = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + deltaDays);
+    setSelectedDate(next);
+    // Keep calendar month in sync when crossing months
+    if (next.getFullYear() !== currentDate.getFullYear() || next.getMonth() !== currentDate.getMonth()) {
+      setCurrentDate(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+  };
+
+  const handlePanelTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (!t) return;
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handlePanelTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    if (!t) return;
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    // Only treat as horizontal swipe if it’s mostly horizontal and long enough
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) shiftSelectedDate(1); // swipe left -> next day
+    else shiftSelectedDate(-1); // swipe right -> previous day
   };
 
   const handleExportCSV = () => {
@@ -239,13 +269,38 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
       </div>
 
       {/* Side Panel: Selected Date Details - 手机端在下方，桌面端在右侧 */}
-      <div className="w-full md:w-80 bg-white rounded-2xl shadow-sm border-2 border-indigo-200 flex flex-col overflow-hidden shrink-0 md:max-h-full" style={{ maxHeight: '60vh' }}>
-         <h3 className="font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2 shrink-0 px-4 pt-4">
-           <span className="text-2xl text-indigo-600">{selectedDate.getDate()}</span>
-           <span className="text-sm font-normal text-gray-500">
-             {selectedDate.toLocaleDateString('zh-CN', { month: 'long', weekday: 'long' })}
-           </span>
-         </h3>
+      <div
+        className="w-full md:w-80 bg-white rounded-2xl shadow-sm border-2 border-indigo-200 flex flex-col overflow-hidden shrink-0 md:max-h-full"
+        style={{ maxHeight: '60vh' }}
+        onTouchStart={handlePanelTouchStart}
+        onTouchEnd={handlePanelTouchEnd}
+      >
+         <div className="shrink-0 px-4 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between gap-3">
+           <div className="flex items-center gap-2">
+             <span className="text-2xl text-indigo-600 font-bold">{selectedDate.getDate()}</span>
+             <span className="text-sm font-normal text-gray-500">
+               {selectedDate.toLocaleDateString('zh-CN', { month: 'long', weekday: 'long' })}
+             </span>
+           </div>
+           <div className="flex items-center gap-1 shrink-0">
+             <button
+               onClick={() => shiftSelectedDate(-1)}
+               className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+               aria-label="前一天"
+               title="前一天"
+             >
+               <ChevronLeft size={20} />
+             </button>
+             <button
+               onClick={() => shiftSelectedDate(1)}
+               className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+               aria-label="后一天"
+               title="后一天"
+             >
+               <ChevronRight size={20} />
+             </button>
+           </div>
+         </div>
 
          {/* Hint for mobile */}
          <div className="px-4 shrink-0 border-b border-gray-100 pb-3 mb-3">

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Goal, MatrixQuadrant } from '../types';
-import { AlertCircle, Calendar, Clock, Trash2, CheckCircle2, Plus, Sun, X, Trophy } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, Trash2, CheckCircle2, Plus, Sun, X, Trophy, Search } from 'lucide-react';
 import { getLocalDateKey } from '../utils/date';
 
 interface Props {
@@ -79,7 +79,21 @@ const ExpandedQuadrantView: React.FC<{
   onSelectGoal: (goal: Goal) => void;
   onDeleteGoal: (e: React.MouseEvent, id: string) => void;
   onAddToToday: (e: React.MouseEvent, id: string) => void;
-}> = ({ title, description, goals, colorClass, icon, onClose, onSelectGoal, onDeleteGoal, onAddToToday }) => {
+  showAddToToday?: boolean;
+  enableSearch?: boolean;
+}> = ({ title, description, goals, colorClass, icon, onClose, onSelectGoal, onDeleteGoal, onAddToToday, showAddToToday = true, enableSearch = false }) => {
+  const [query, setQuery] = useState('');
+
+  const filteredGoals = useMemo(() => {
+    if (!enableSearch) return goals;
+    const q = query.trim().toLowerCase();
+    if (!q) return goals;
+    return goals.filter(g => {
+      const hay = `${g.title}\n${g.description}\n${g.retrospective || ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [enableSearch, goals, query]);
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pb-20 md:pb-4">
       <div className={`bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col ${colorClass} border-2`}>
@@ -99,15 +113,37 @@ const ExpandedQuadrantView: React.FC<{
             <X size={24} className="text-gray-600" />
           </button>
         </div>
+
+        {enableSearch && (
+          <div className="px-6 py-3 bg-white border-b border-gray-100 sticky top-[97px] z-10">
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+              <Search size={16} className="text-gray-400" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="搜索已完成目标（标题/描述/复盘）"
+                className="flex-1 bg-transparent outline-none text-sm text-gray-700"
+              />
+              {query.trim() && (
+                <button
+                  onClick={() => setQuery('')}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  清除
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Scrollable Goals List */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-          {goals.length === 0 && (
+          {filteredGoals.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
-              <p className="text-lg">暂无目标</p>
+              <p className="text-lg">{enableSearch ? '没有匹配结果' : '暂无目标'}</p>
             </div>
           )}
-          {goals.map((goal) => {
+          {filteredGoals.map((goal) => {
             const completedCount = goal.subGoals.filter(s => s.isCompleted).length;
             const totalCount = goal.subGoals.length;
             const progress = totalCount === 0 ? 0 : (completedCount / totalCount) * 100;
@@ -141,19 +177,20 @@ const ExpandedQuadrantView: React.FC<{
                         <Sun size={12} /> 今天
                       </div>
                     )}
-                    {/* 添加到今天按钮 - 必须显示 */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        onAddToToday(e, goal.id);
-                      }}
-                      className="text-indigo-600 hover:text-indigo-700 active:text-indigo-700 hover:bg-indigo-100 active:bg-indigo-100 p-3 rounded-lg transition-all touch-manipulation w-[48px] h-[48px] flex items-center justify-center bg-indigo-50 border-2 border-indigo-400 shadow-md"
-                      title="将未完成子目标加入今天"
-                      aria-label="将未完成子目标加入今天"
-                    >
-                      <Plus size={24} strokeWidth={3} />
-                    </button>
+                    {showAddToToday && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          onAddToToday(e, goal.id);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 active:text-indigo-700 hover:bg-indigo-100 active:bg-indigo-100 p-3 rounded-lg transition-all touch-manipulation w-[48px] h-[48px] flex items-center justify-center bg-indigo-50 border-2 border-indigo-400 shadow-md"
+                        title="加入今天"
+                        aria-label="加入今天"
+                      >
+                        <Plus size={24} strokeWidth={3} />
+                      </button>
+                    )}
                     {/* 删除按钮 - 必须显示 */}
                     <button
                       onClick={(e) => {
@@ -188,6 +225,12 @@ const ExpandedQuadrantView: React.FC<{
                     </span>
                   )}
                 </div>
+
+                {goal.retrospective && goal.retrospective.trim() && (
+                  <div className="mt-2 text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded-lg p-2 line-clamp-2">
+                    复盘：{goal.retrospective.trim()}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -301,6 +344,8 @@ export const EisenhowerMatrix: React.FC<Props> = ({ goals, completedGoals, onSel
           onSelectGoal={onSelectGoal}
           onDeleteGoal={onDeleteGoal}
           onAddToToday={onAddToToday}
+          showAddToToday={false}
+          enableSearch={true}
         />
       )}
     </>
