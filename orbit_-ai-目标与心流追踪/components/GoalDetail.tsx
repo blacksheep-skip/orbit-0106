@@ -78,6 +78,42 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
     setActiveSubGoalId(newId);
   };
 
+  const moveSubGoal = (id: string, direction: 'up' | 'down', e: React.MouseEvent) => {
+    e.stopPropagation();
+    const idx = goal.subGoals.findIndex(sg => sg.id === id);
+    if (idx < 0) return;
+    const newIndex = direction === 'up' ? idx - 1 : idx + 1;
+    if (newIndex < 0 || newIndex >= goal.subGoals.length) return;
+
+    const next = [...goal.subGoals];
+    const [item] = next.splice(idx, 1);
+    next.splice(newIndex, 0, item);
+    onUpdateGoal({ ...goal, subGoals: next });
+  };
+
+  const handleDragStartSubGoal = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDropSubGoal = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (!sourceId || sourceId === targetId) return;
+    const sourceIdx = goal.subGoals.findIndex(sg => sg.id === sourceId);
+    const targetIdx = goal.subGoals.findIndex(sg => sg.id === targetId);
+    if (sourceIdx < 0 || targetIdx < 0) return;
+
+    const next = [...goal.subGoals];
+    const [moved] = next.splice(sourceIdx, 1);
+    next.splice(targetIdx, 0, moved);
+    onUpdateGoal({ ...goal, subGoals: next });
+  };
+
+  const handleDragOverSubGoal = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   const toggleSubGoalCompletion = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updatedSubGoals = goal.subGoals.map(sg => {
@@ -232,9 +268,12 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
         </div>
 
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 flex flex-col md:overflow-hidden min-h-[400px]">
-          <h2 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2 uppercase tracking-wide">
-            <CheckSquare size={16} /> 1. 子目标列表
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2 uppercase tracking-wide">
+              <CheckSquare size={16} /> 1. 子目标列表
+            </h2>
+            <span className="text-[10px] text-gray-400">可拖拽/可上下调整顺序</span>
+          </div>
           
           <div className="flex-1 md:overflow-y-auto custom-scrollbar space-y-2 pr-1 pb-2">
             {goal.subGoals.map((sg) => {
@@ -242,12 +281,22 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                return (
                 <div 
                   key={sg.id} 
+                  draggable
+                  onDragStart={(e) => handleDragStartSubGoal(e, sg.id)}
+                  onDragOver={handleDragOverSubGoal}
+                  onDrop={(e) => handleDropSubGoal(e, sg.id)}
                   onClick={() => setActiveSubGoalId(sg.id)}
                   className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 group
                     ${activeSubGoalId === sg.id 
                       ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200 shadow-sm' 
                       : 'bg-white border-gray-100 hover:border-indigo-100 hover:bg-slate-50'}`}
                 >
+                  {/* Mobile reorder controls */}
+                  <div className="flex flex-col md:hidden text-gray-300 gap-1 mr-1 shrink-0">
+                    <button onClick={(e) => moveSubGoal(sg.id, 'up', e)} className="hover:text-indigo-600 px-1" aria-label="上移">▲</button>
+                    <button onClick={(e) => moveSubGoal(sg.id, 'down', e)} className="hover:text-indigo-600 px-1" aria-label="下移">▼</button>
+                  </div>
+
                   <button
                     onClick={(e) => toggleSubGoalCompletion(sg.id, e)}
                     className={`mt-0.5 shrink-0 ${sg.isCompleted ? 'text-green-500' : 'text-gray-300 hover:text-gray-400'}`}

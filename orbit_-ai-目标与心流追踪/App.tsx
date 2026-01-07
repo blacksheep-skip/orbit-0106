@@ -118,6 +118,24 @@ const App: React.FC = () => {
 
     setGoals(goals.map(g => {
       if (g.id === id) {
+        // If there are no sub-goals yet, create one so the goal can appear in Today view.
+        // This matches user expectation: clicking "+" means "add this goal to today".
+        if (g.subGoals.length === 0) {
+          return {
+            ...g,
+            subGoals: [
+              {
+                id: crypto.randomUUID(),
+                title: g.title,
+                isCompleted: false,
+                assignedDate: todayStr,
+                todayIndex: maxIndex + 1,
+                logs: []
+              }
+            ]
+          };
+        }
+
         return {
           ...g,
           subGoals: g.subGoals.map((sg, idx) => 

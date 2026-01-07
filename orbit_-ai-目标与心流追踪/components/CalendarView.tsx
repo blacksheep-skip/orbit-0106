@@ -304,16 +304,6 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => 
          </div>
       </div>
 
-      {/* Mobile FAB: always visible add button */}
-      <button
-        onClick={() => setIsAddModalOpen(true)}
-        className="md:hidden fixed right-4 bottom-24 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-50"
-        aria-label="添加待办"
-        title="添加待办"
-      >
-        <Plus size={28} />
-      </button>
-
       {/* Add Task Modal (mobile-friendly) */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pb-20 md:pb-4">
