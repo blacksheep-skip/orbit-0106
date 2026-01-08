@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Goal, SubGoal, MatrixQuadrant } from '../types';
-import { CheckSquare, Square, CalendarOff, ArrowRight, GripVertical } from 'lucide-react';
+import { CheckSquare, Square, CalendarOff, ArrowRight, GripVertical, ArrowRightCircle } from 'lucide-react';
 import { getLocalDateKey } from '../utils/date';
 
 interface Props {
   goals: Goal[];
   onToggleSubGoal: (goalId: string, subGoalId: string) => void;
   onRemoveSubGoalFromToday: (goalId: string, subGoalId: string) => void;
+  onDeferToTomorrow: (goalId: string, subGoalId: string) => void;
   onOpenDetail: (goal: Goal) => void;
   onUpdateOrder: (items: { goalId: string, subGoalId: string, newIndex: number }[]) => void;
 }
@@ -32,7 +33,7 @@ const SunIcon = ({ size, className }: { size: number, className?: string }) => (
   </svg>
 );
 
-export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSubGoalFromToday, onOpenDetail, onUpdateOrder }) => {
+export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSubGoalFromToday, onDeferToTomorrow, onOpenDetail, onUpdateOrder }) => {
   const [flatTasks, setFlatTasks] = useState<{ goal: Goal, subGoal: SubGoal }[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -43,14 +44,20 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
       
       goals.forEach(g => {
           g.subGoals.forEach(sg => {
-              if (sg.assignedDate === todayDateStr) {
-                  tasks.push({ goal: g, subGoal: sg });
+              // Show tasks scheduled for today OR overdue tasks (assigned earlier than today)
+              if (!sg.isCompleted && sg.assignedDate && sg.assignedDate <= todayDateStr) {
+                tasks.push({ goal: g, subGoal: sg });
               }
           });
       });
 
-      // Sort by todayIndex
-      tasks.sort((a, b) => (a.subGoal.todayIndex || 0) - (b.subGoal.todayIndex || 0));
+      // Sort overdue first (older date), then by todayIndex
+      tasks.sort((a, b) => {
+        const ad = a.subGoal.assignedDate || todayDateStr;
+        const bd = b.subGoal.assignedDate || todayDateStr;
+        if (ad !== bd) return ad.localeCompare(bd);
+        return (a.subGoal.todayIndex || 0) - (b.subGoal.todayIndex || 0);
+      });
       setFlatTasks(tasks);
   }, [goals]);
 
@@ -181,6 +188,9 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
                           <span className={`text-sm font-medium truncate ${item.subGoal.isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                               {item.subGoal.title}
                           </span>
+                          {item.subGoal.assignedDate && item.subGoal.assignedDate < getLocalDateKey() && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">逾期</span>
+                          )}
                       </div>
                       <div className="flex items-center gap-2">
                           <span className="text-[10px] text-gray-400 truncate max-w-[150px]">{item.goal.title}</span>
@@ -190,6 +200,14 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
 
                   {/* Actions */}
                   <div className="flex items-center gap-1">
+                      <button
+                          onClick={() => onDeferToTomorrow(item.goal.id, item.subGoal.id)}
+                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="顺延到明天"
+                          aria-label="顺延到明天"
+                      >
+                          <ArrowRightCircle size={18} />
+                      </button>
                       <button 
                           onClick={() => onOpenDetail(item.goal)}
                           className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"

@@ -161,6 +161,41 @@ const App: React.FC = () => {
     handleUpdateGoal({ ...goal, subGoals: updatedSubGoals });
   };
 
+  const handleDeferSubGoalToTomorrow = (goalId: string, subGoalId: string) => {
+    const todayKey = getLocalDateKey();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowKey = getLocalDateKey(tomorrow);
+
+    // Find current max index for tomorrow so we can append
+    let maxIndex = 0;
+    goals.forEach(g => {
+      g.subGoals.forEach(sg => {
+        if (sg.assignedDate === tomorrowKey && (sg.todayIndex || 0) > maxIndex) {
+          maxIndex = sg.todayIndex || 0;
+        }
+      });
+    });
+
+    setGoals(goals.map(g => {
+      if (g.id !== goalId) return g;
+      return {
+        ...g,
+        subGoals: g.subGoals.map(sg => {
+          if (sg.id !== subGoalId) return sg;
+          // Only defer if it is scheduled for today or earlier and not completed
+          const assigned = sg.assignedDate;
+          if (!assigned || assigned > todayKey || sg.isCompleted) return sg;
+          return {
+            ...sg,
+            assignedDate: tomorrowKey,
+            todayIndex: maxIndex + 1
+          };
+        })
+      };
+    }));
+  };
+
   const handleToggleSubGoalInToday = (goalId: string, subGoalId: string) => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
@@ -461,6 +496,7 @@ const App: React.FC = () => {
                   goals={goals} 
                   onToggleSubGoal={handleToggleSubGoalInToday}
                   onRemoveSubGoalFromToday={handleRemoveSubGoalFromToday}
+                  onDeferToTomorrow={handleDeferSubGoalToTomorrow}
                   onOpenDetail={(g) => setSelectedGoalId(g.id)}
                   onUpdateOrder={handleUpdateTodayOrder}
                 />
