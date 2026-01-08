@@ -247,6 +247,39 @@ const App: React.FC = () => {
     setGoals([...goals, newGoal]);
   };
 
+  // Update a scheduled task (calendar-created task)
+  const handleUpdateScheduledTask = (
+    goalId: string,
+    subGoalId: string,
+    updates: { title?: string; desc?: string; assignedDate?: string }
+  ) => {
+    setGoals(goals.map(g => {
+      if (g.id !== goalId) return g;
+      return {
+        ...g,
+        description: updates.desc !== undefined ? updates.desc : g.description,
+        subGoals: g.subGoals.map(sg => {
+          if (sg.id !== subGoalId) return sg;
+          return {
+            ...sg,
+            title: updates.title !== undefined ? updates.title : sg.title,
+            assignedDate: updates.assignedDate !== undefined ? updates.assignedDate : sg.assignedDate
+          };
+        })
+      };
+    }));
+  };
+
+  // Delete a scheduled task (remove sub-goal; if goal becomes empty, remove it)
+  const handleDeleteScheduledTask = (goalId: string, subGoalId: string) => {
+    setGoals(goals.flatMap(g => {
+      if (g.id !== goalId) return [g];
+      const nextSubGoals = g.subGoals.filter(sg => sg.id !== subGoalId);
+      if (nextSubGoals.length === 0) return [];
+      return [{ ...g, subGoals: nextSubGoals }];
+    }));
+  };
+
   // --- CSV Import Logic ---
   const mapQuadrantFromText = (text: string): MatrixQuadrant => {
     const t = text.trim();
@@ -433,7 +466,12 @@ const App: React.FC = () => {
                 />
               )}
               {currentView === 'calendar' && (
-                <CalendarView goals={goals} onAddScheduledTask={handleAddScheduledTask} />
+                 <CalendarView
+                   goals={goals}
+                   onAddScheduledTask={handleAddScheduledTask}
+                   onUpdateScheduledTask={handleUpdateScheduledTask}
+                   onDeleteScheduledTask={handleDeleteScheduledTask}
+                 />
               )}
               {currentView === 'settings' && (
                 <SettingsView 
