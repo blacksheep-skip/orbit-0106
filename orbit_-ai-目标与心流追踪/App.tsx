@@ -80,6 +80,7 @@ const App: React.FC = () => {
       quadrant: newQuadrant,
       deadline: new Date(Date.now() + 86400000 * 7).toISOString(), // Default 1 week
       subGoals: [],
+      source: 'manual',
       createdAt: Date.now()
     };
 
@@ -268,6 +269,7 @@ const App: React.FC = () => {
       description: desc || '',
       quadrant: MatrixQuadrant.Schedule,
       deadline: new Date(dateKey + 'T23:59:59').toISOString(),
+      source: 'calendar',
       subGoals: [{
         id: crypto.randomUUID(),
         title: title,
@@ -484,8 +486,8 @@ const App: React.FC = () => {
             <main className="flex-1 overflow-y-auto p-4 md:p-6">
               {currentView === 'matrix' && (
                 <EisenhowerMatrix 
-                  goals={goals.filter(g => !g.retrospective || g.retrospective.trim() === '')}
-                  completedGoals={goals.filter(g => g.retrospective && g.retrospective.trim() !== '')}
+                  goals={goals.filter(g => (g.source ?? 'manual') !== 'calendar' && (!g.retrospective || g.retrospective.trim() === ''))}
+                  completedGoals={goals.filter(g => (g.source ?? 'manual') !== 'calendar' && g.retrospective && g.retrospective.trim() !== '')}
                   onSelectGoal={(g) => setSelectedGoalId(g.id)}
                   onDeleteGoal={handleDeleteGoal}
                   onAddToToday={handleAddToToday}
