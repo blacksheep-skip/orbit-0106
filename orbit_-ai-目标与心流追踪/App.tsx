@@ -47,7 +47,28 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('orbit_goals');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved) as Goal[];
+        // Migration: older data may not have `source`. Try to infer calendar-created tasks
+        // so they don't show up in Matrix quadrants.
+        const inferCalendarSource = (g: Goal): boolean => {
+          if (g.source === 'calendar') return true;
+          // Heuristic: calendar tasks are usually single-subGoal items with assignedDate,
+          // no retrospective, and created in Schedule quadrant.
+          const hasAssigned = g.subGoals?.some(sg => !!sg.assignedDate);
+          const single = (g.subGoals?.length || 0) === 1;
+          const noRetro = !(g.retrospective && g.retrospective.trim());
+          const schedule = g.quadrant === MatrixQuadrant.Schedule;
+          const sub = g.subGoals?.[0];
+          const logsEmpty = !sub || !sub.logs || sub.logs.length === 0;
+          const likelyPlaceholder = g.title === '计划任务' || g.description === '' || (sub && sub.title !== g.title);
+          return !!(hasAssigned && single && noRetro && schedule && logsEmpty && likelyPlaceholder);
+        };
+
+        return parsed.map(g => {
+          if (!g.source && inferCalendarSource(g)) return { ...g, source: 'calendar' };
+          if (!g.source) return { ...g, source: 'manual' };
+          return g;
+        });
       } catch (e) {
         return INITIAL_GOALS;
       }
