@@ -206,7 +206,7 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                <>
                  <div className="flex justify-between items-start mb-2">
                    <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded-md inline-block">
-                     {QuadrantLabels[goal.quadrant]}
+                     {goal.source === 'calendar' ? '日历待办' : QuadrantLabels[goal.quadrant]}
                    </span>
                    <button 
                      onClick={() => setIsEditing(true)}

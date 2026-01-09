@@ -26,6 +26,15 @@ const QuadrantBadge: React.FC<{ q: MatrixQuadrant }> = ({ q }) => {
   );
 };
 
+const SourceBadge: React.FC<{ source?: Goal['source'] }> = ({ source }) => {
+  if (source !== 'calendar') return null;
+  return (
+    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">
+      日历待办
+    </span>
+  );
+};
+
 // Helper icon
 const SunIcon = ({ size, className }: { size: number, className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -191,10 +200,13 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
                           {item.subGoal.assignedDate && item.subGoal.assignedDate < getLocalDateKey() && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">逾期</span>
                           )}
+                          <SourceBadge source={item.goal.source} />
                       </div>
                       <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-400 truncate max-w-[150px]">{item.goal.title}</span>
-                          <QuadrantBadge q={item.goal.quadrant} />
+                          <span className="text-[10px] text-gray-400 truncate max-w-[150px]">
+                            {item.goal.source === 'calendar' ? '计划任务' : item.goal.title}
+                          </span>
+                          {item.goal.source !== 'calendar' && <QuadrantBadge q={item.goal.quadrant} />}
                       </div>
                   </div>
 
