@@ -33,6 +33,7 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
   
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [newTag, setNewTag] = useState('');
 
   const activeSubGoal = goal.subGoals.find(sg => sg.id === activeSubGoalId);
   const todayStr = getLocalDateKey();
@@ -186,6 +187,19 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
 
   const handleUpdateRetrospective = (text: string) => {
     onUpdateGoal({ ...goal, retrospective: text });
+  };
+
+  const addTag = () => {
+    const t = newTag.trim();
+    if (!t) return;
+    const next = Array.from(new Set([...(goal.tags || []), t]));
+    onUpdateGoal({ ...goal, tags: next });
+    setNewTag('');
+  };
+
+  const removeTag = (tag: string) => {
+    const next = (goal.tags || []).filter(t => t !== tag);
+    onUpdateGoal({ ...goal, tags: next });
   };
 
   const completedCount = goal.subGoals.filter(s => s.isCompleted).length;
@@ -475,6 +489,49 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-gray-800">复盘总结</h3>
              </div>
+
+             {/* Tags */}
+             <div className="mb-3">
+               <div className="flex items-center justify-between mb-2">
+                 <p className="text-xs font-semibold text-gray-600">标签</p>
+               </div>
+               <div className="flex gap-2">
+                 <input
+                   value={newTag}
+                   onChange={(e) => setNewTag(e.target.value)}
+                   onKeyDown={(e) => {
+                     if (e.key === 'Enter') {
+                       e.preventDefault();
+                       addTag();
+                     }
+                   }}
+                   placeholder="添加标签（例如：沟通/效率/专注）"
+                   className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50 focus:bg-white"
+                 />
+                 <button
+                   onClick={addTag}
+                   disabled={!newTag.trim()}
+                   className="px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-medium"
+                 >
+                   添加
+                 </button>
+               </div>
+               {(goal.tags || []).length > 0 && (
+                 <div className="flex flex-wrap gap-2 mt-2">
+                   {(goal.tags || []).map(tag => (
+                     <button
+                       key={tag}
+                       onClick={() => removeTag(tag)}
+                       className="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100"
+                       title="点击删除标签"
+                     >
+                       {tag} ×
+                     </button>
+                   ))}
+                 </div>
+               )}
+             </div>
+
              <textarea 
                 value={goal.retrospective || ''}
                 onChange={(e) => handleUpdateRetrospective(e.target.value)}
