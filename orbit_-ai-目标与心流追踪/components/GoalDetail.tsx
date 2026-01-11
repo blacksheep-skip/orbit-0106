@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Goal, SubGoal, GoalLog, MatrixQuadrant } from '../types';
-import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2, Check } from 'lucide-react';
 import { formatGoalForExport } from '../services/geminiService';
 import { getLocalDateKey } from '../utils/date';
 
@@ -34,6 +34,8 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [editingSubGoalId, setEditingSubGoalId] = useState<string | null>(null);
+  const [editSubGoalTitle, setEditSubGoalTitle] = useState('');
 
   const activeSubGoal = goal.subGoals.find(sg => sg.id === activeSubGoalId);
   const todayStr = getLocalDateKey();
@@ -154,6 +156,28 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
         setActiveSubGoalId(updatedSubGoals.length > 0 ? updatedSubGoals[0].id : null);
       }
     }
+  };
+
+  const startEditSubGoal = (sg: SubGoal, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingSubGoalId(sg.id);
+    setEditSubGoalTitle(sg.title);
+  };
+
+  const cancelEditSubGoal = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditingSubGoalId(null);
+    setEditSubGoalTitle('');
+  };
+
+  const saveEditSubGoal = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const nextTitle = editSubGoalTitle.trim();
+    if (!nextTitle) return;
+    const updatedSubGoals = goal.subGoals.map(sg => sg.id === id ? { ...sg, title: nextTitle } : sg);
+    onUpdateGoal({ ...goal, subGoals: updatedSubGoals });
+    setEditingSubGoalId(null);
+    setEditSubGoalTitle('');
   };
 
   const handleAddLog = () => {
@@ -300,7 +324,7 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                   onDragOver={handleDragOverSubGoal}
                   onDrop={(e) => handleDropSubGoal(e, sg.id)}
                   onClick={() => setActiveSubGoalId(sg.id)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 group
+                  className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 group
                     ${activeSubGoalId === sg.id 
                       ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200 shadow-sm' 
                       : 'bg-white border-gray-100 hover:border-indigo-100 hover:bg-slate-50'}`}
@@ -319,9 +343,28 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                   </button>
                   
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${sg.isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                      {sg.title}
-                    </p>
+                    {editingSubGoalId === sg.id ? (
+                      <input
+                        value={editSubGoalTitle}
+                        onChange={(e) => setEditSubGoalTitle(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveEditSubGoal(sg.id);
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            cancelEditSubGoal();
+                          }
+                        }}
+                        className="w-full text-sm font-medium text-gray-800 border border-indigo-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        autoFocus
+                      />
+                    ) : (
+                      <p className={`text-sm font-medium whitespace-normal break-words ${sg.isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                        {sg.title}
+                      </p>
+                    )}
                   </div>
 
                   <button
@@ -334,6 +377,34 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                   >
                     {isAssignedToday ? <Sun size={16} fill="currentColor" /> : <Sun size={16} />}
                   </button>
+
+                  {/* Edit / Save controls */}
+                  {editingSubGoalId === sg.id ? (
+                    <>
+                      <button
+                        onClick={(e) => saveEditSubGoal(sg.id, e)}
+                        className="p-1.5 rounded-lg transition-colors shrink-0 text-indigo-600 hover:bg-indigo-50"
+                        title="保存子目标标题"
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => cancelEditSubGoal(e)}
+                        className="p-1.5 rounded-lg transition-colors shrink-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                        title="取消编辑"
+                      >
+                        <X size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={(e) => startEditSubGoal(sg, e)}
+                      className="p-1.5 rounded-lg transition-colors shrink-0 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
+                      title="编辑子目标标题"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  )}
 
                   <button
                     onClick={(e) => handleDeleteSubGoal(sg.id, e)}

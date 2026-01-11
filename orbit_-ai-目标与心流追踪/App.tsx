@@ -238,6 +238,28 @@ const App: React.FC = () => {
     handleUpdateGoal({ ...goal, subGoals: updatedSubGoals });
   };
 
+  const handleAddLogToSubGoal = (goalId: string, subGoalId: string, content: string) => {
+    const text = content.trim();
+    if (!text) return;
+    const newLog = {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      content: text,
+      mood: 'neutral' as const
+    };
+
+    setGoals(goals.map(g => {
+      if (g.id !== goalId) return g;
+      return {
+        ...g,
+        subGoals: g.subGoals.map(sg => {
+          if (sg.id !== subGoalId) return sg;
+          return { ...sg, logs: [...(sg.logs || []), newLog] };
+        })
+      };
+    }));
+  };
+
   const handleUpdateTodayOrder = (items: { goalId: string, subGoalId: string, newIndex: number }[]) => {
       const updatesMap = new Map<string, Map<string, number>>();
       
@@ -520,6 +542,7 @@ const App: React.FC = () => {
                   onToggleSubGoal={handleToggleSubGoalInToday}
                   onRemoveSubGoalFromToday={handleRemoveSubGoalFromToday}
                   onDeferToTomorrow={handleDeferSubGoalToTomorrow}
+                  onQuickAddLog={handleAddLogToSubGoal}
                   onOpenDetail={(g) => setSelectedGoalId(g.id)}
                   onUpdateOrder={handleUpdateTodayOrder}
                 />
