@@ -136,30 +136,16 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
     );
   }
 
-  // Calculate progress
-  const completedTasks = flatTasks.filter(t => t.subGoal.isCompleted).length;
-  const progress = flatTasks.length === 0 ? 0 : Math.round((completedTasks / flatTasks.length) * 100);
-
   return (
     <div className="max-w-4xl mx-auto h-full flex flex-col">
       <div className="mb-6 bg-white p-6 rounded-2xl shadow-sm border border-indigo-100 shrink-0">
-        <div className="flex justify-between items-end mb-4">
+        <div className="flex justify-between items-end">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">今天</h1>
             <p className="text-gray-500 text-sm">
               {new Date().toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          <div className="text-right">
-             <span className="text-3xl font-bold text-indigo-600">{progress}%</span>
-             <p className="text-xs text-gray-400">今日进度</p>
-          </div>
-        </div>
-        <div className="w-full bg-gray-100 rounded-full h-2">
-          <div 
-            className="h-2 rounded-full bg-indigo-600 transition-all duration-700 ease-out" 
-            style={{ width: `${progress}%` }} 
-          />
         </div>
       </div>
 
