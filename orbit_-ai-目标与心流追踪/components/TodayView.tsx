@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Goal, SubGoal, MatrixQuadrant } from '../types';
-import { CheckSquare, Square, CalendarOff, ArrowRight, GripVertical } from 'lucide-react';
+import { CheckSquare, Square, CalendarOff, ArrowRight, GripVertical, Sparkles } from 'lucide-react';
 import { getLocalDateKey } from '../utils/date';
 
 interface Props {
@@ -36,9 +36,13 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
   const [flatTasks, setFlatTasks] = useState<{ goal: Goal, subGoal: SubGoal }[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  const todayKey = getLocalDateKey();
+  const [dailyReview, setDailyReview] = useState('');
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
   // Re-flatten tasks whenever goals change
   useEffect(() => {
-      const todayDateStr = getLocalDateKey();
+      const todayDateStr = todayKey;
       const tasks: { goal: Goal, subGoal: SubGoal }[] = [];
       
       goals.forEach(g => {
@@ -102,6 +106,36 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
       onUpdateOrder(updates);
   };
 
+  // Load daily review
+  useEffect(() => {
+    const saved = localStorage.getItem(`orbit_daily_review_${todayKey}`);
+    setDailyReview(saved || '');
+  }, [todayKey]);
+
+  // Persist daily review
+  useEffect(() => {
+    localStorage.setItem(`orbit_daily_review_${todayKey}`,
+      dailyReview
+    );
+  }, [todayKey, dailyReview]);
+
+  const handleSummarize = async () => {
+    if (!dailyReview.trim()) return;
+    setIsSummarizing(true);
+    try {
+      const summary = dailyReview
+        .split(/\n+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .slice(0, 8)
+        .map(s => `- ${s}`)
+        .join('\n');
+      setDailyReview(summary || dailyReview);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
   if (flatTasks.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -116,31 +150,38 @@ export const TodayView: React.FC<Props> = ({ goals, onToggleSubGoal, onRemoveSub
     );
   }
 
-  // Calculate progress
-  const completedTasks = flatTasks.filter(t => t.subGoal.isCompleted).length;
-  const progress = flatTasks.length === 0 ? 0 : Math.round((completedTasks / flatTasks.length) * 100);
-
   return (
     <div className="max-w-4xl mx-auto h-full flex flex-col">
-      <div className="mb-6 bg-white p-6 rounded-2xl shadow-sm border border-indigo-100 shrink-0">
-        <div className="flex justify-between items-end mb-4">
+      <div className="mb-4 bg-white p-6 rounded-2xl shadow-sm border border-indigo-100 shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">今天</h1>
+          <p className="text-gray-500 text-sm">
+            {new Date().toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 shrink-0">
+        <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">今天</h1>
-            <p className="text-gray-500 text-sm">
-              {new Date().toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </p>
+            <h2 className="text-sm font-bold text-gray-800">今日复盘</h2>
+            <p className="text-xs text-gray-400 mt-0.5">写下今天的收获、卡点、明天的调整。</p>
           </div>
-          <div className="text-right">
-             <span className="text-3xl font-bold text-indigo-600">{progress}%</span>
-             <p className="text-xs text-gray-400">今日进度</p>
-          </div>
+          <button
+            onClick={handleSummarize}
+            disabled={isSummarizing || !dailyReview.trim()}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            title="AI 总结为摘要"
+          >
+            <Sparkles size={14} /> {isSummarizing ? '总结中…' : 'AI'}
+          </button>
         </div>
-        <div className="w-full bg-gray-100 rounded-full h-2">
-          <div 
-            className="h-2 rounded-full bg-indigo-600 transition-all duration-700 ease-out" 
-            style={{ width: `${progress}%` }} 
-          />
-        </div>
+        <textarea
+          value={dailyReview}
+          onChange={(e) => setDailyReview(e.target.value)}
+          placeholder="例如：\n1) 今天完成了哪些关键任务\n2) 遇到的最大障碍是什么\n3) 明天准备怎么调整"
+          className="w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none min-h-[140px]"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-10">
