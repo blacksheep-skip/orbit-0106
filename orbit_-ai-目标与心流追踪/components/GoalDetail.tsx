@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Goal, SubGoal, GoalLog, MatrixQuadrant } from '../types';
-import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2, Tag, Plus } from 'lucide-react';
 import { formatGoalForExport } from '../services/geminiService';
 import { getLocalDateKey } from '../utils/date';
 
 interface Props {
   goal: Goal;
+  allTags: string[];
   onBack: () => void;
   onUpdateGoal: (updatedGoal: Goal) => void;
 }
@@ -17,7 +18,7 @@ const QuadrantLabels: Record<MatrixQuadrant, string> = {
   [MatrixQuadrant.Eliminate]: '不重要不紧急'
 };
 
-export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
+export const GoalDetail: React.FC<Props> = ({ goal, allTags, onBack, onUpdateGoal }) => {
   // State for subgoals
   const [newSubGoal, setNewSubGoal] = useState('');
   const [logInput, setLogInput] = useState('');
@@ -30,6 +31,8 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
   const [editTitle, setEditTitle] = useState(goal.title);
   const [editDesc, setEditDesc] = useState(goal.description);
   const [editQuadrant, setEditQuadrant] = useState(goal.quadrant);
+  const [editTags, setEditTags] = useState<string[]>(goal.tags || []);
+  const [tagInput, setTagInput] = useState('');
   
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -48,6 +51,8 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
     setEditTitle(goal.title);
     setEditDesc(goal.description);
     setEditQuadrant(goal.quadrant);
+    setEditTags(goal.tags || []);
+    setTagInput('');
   }, [goal]);
 
   const handleSaveEdit = () => {
@@ -55,7 +60,8 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
       ...goal,
       title: editTitle,
       description: editDesc,
-      quadrant: editQuadrant
+      quadrant: editQuadrant,
+      tags: editTags
     });
     setIsEditing(false);
   };
@@ -221,6 +227,16 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                  <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
                     <div className="h-1.5 rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${progress}%` }} />
                  </div>
+
+                 {(goal.tags || []).length > 0 && (
+                   <div className="mt-3 flex flex-wrap gap-2">
+                     {(goal.tags || []).map((t) => (
+                       <span key={t} className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full border border-slate-200">
+                         {t}
+                       </span>
+                     ))}
+                   </div>
+                 )}
                </>
              ) : (
                <div className="space-y-3">
@@ -248,6 +264,74 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                     <option value={MatrixQuadrant.Delegate}>不重要紧急 (Delegate)</option>
                     <option value={MatrixQuadrant.Eliminate}>不重要不紧急 (Eliminate)</option>
                  </select>
+                 <div className="space-y-2">
+                   <div className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                     <Tag size={14} className="text-gray-400" /> 标签
+                   </div>
+
+                   <div className="flex flex-wrap gap-2">
+                     {editTags.length > 0 ? (
+                       editTags.map((t) => (
+                         <button
+                           key={t}
+                           type="button"
+                           onClick={() => setEditTags(editTags.filter(x => x !== t))}
+                           className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full border border-slate-200 hover:bg-slate-200 transition-colors"
+                           title="点击移除"
+                         >
+                           {t} ×
+                         </button>
+                       ))
+                     ) : (
+                       <span className="text-xs text-gray-400">暂无标签</span>
+                     )}
+                   </div>
+
+                   <div className="flex gap-2">
+                     <input
+                       type="text"
+                       value={tagInput}
+                       onChange={(e) => setTagInput(e.target.value)}
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter') {
+                           e.preventDefault();
+                           const next = tagInput.trim();
+                           if (!next) return;
+                           const exists = editTags.some(t => t.toLowerCase() === next.toLowerCase());
+                           if (!exists) setEditTags([...editTags, next]);
+                           setTagInput('');
+                         }
+                       }}
+                       placeholder="输入新标签（回车添加）"
+                       className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 focus:bg-white transition-all"
+                       list="all-tags"
+                     />
+                     <button
+                       type="button"
+                       onClick={() => {
+                         const next = tagInput.trim();
+                         if (!next) return;
+                         const exists = editTags.some(t => t.toLowerCase() === next.toLowerCase());
+                         if (!exists) setEditTags([...editTags, next]);
+                         setTagInput('');
+                       }}
+                       disabled={!tagInput.trim()}
+                       className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
+                       title="添加标签"
+                     >
+                       <Plus size={16} />
+                     </button>
+                   </div>
+
+                   <datalist id="all-tags">
+                     {allTags
+                       .filter(t => !editTags.some(et => et.toLowerCase() === t.toLowerCase()))
+                       .map(t => (
+                         <option key={t} value={t} />
+                       ))}
+                   </datalist>
+                 </div>
+
                  <div className="flex justify-end gap-2 pt-1">
                    <button 
                      onClick={() => setIsEditing(false)}

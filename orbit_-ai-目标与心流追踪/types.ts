@@ -32,4 +32,5 @@ export interface Goal {
   retrospective?: string;
   source?: 'manual' | 'calendar';
   createdAt: number;
+  tags?: string[];
 }

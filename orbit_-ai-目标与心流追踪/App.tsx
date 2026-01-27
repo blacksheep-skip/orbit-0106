@@ -80,7 +80,8 @@ const App: React.FC = () => {
       quadrant: newQuadrant,
       deadline: new Date(Date.now() + 86400000 * 7).toISOString(), // Default 1 week
       subGoals: [],
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      tags: []
     };
 
     setGoals([...goals, newGoal]);
@@ -377,6 +378,7 @@ const App: React.FC = () => {
           <div className="h-full p-4 md:p-6 overflow-hidden">
              <GoalDetail 
               goal={selectedGoal} 
+              allTags={Array.from(new Set(goals.flatMap(g => g.tags || [])))}
               onBack={() => setSelectedGoalId(null)}
               onUpdateGoal={handleUpdateGoal}
             />
