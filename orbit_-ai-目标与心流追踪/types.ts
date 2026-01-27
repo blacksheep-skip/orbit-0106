@@ -30,12 +30,6 @@ export interface Goal {
   deadline: string; // ISO date string
   subGoals: SubGoal[];
   retrospective?: string;
-  tags?: string[];
-  /**
-   * Data origin.
-   * - 'manual': regular goals created in Matrix / GoalDetail
-   * - 'calendar': quick scheduled tasks created from Calendar view
-   */
   source?: 'manual' | 'calendar';
   createdAt: number;
 }

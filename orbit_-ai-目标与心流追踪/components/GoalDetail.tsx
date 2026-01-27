@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Goal, SubGoal, GoalLog, MatrixQuadrant } from '../types';
-import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2, Check } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Square, Send, Copy, FileText, Activity, ChevronRight, MousePointerClick, Sun, Pencil, Save, X, Trash2 } from 'lucide-react';
 import { formatGoalForExport } from '../services/geminiService';
 import { getLocalDateKey } from '../utils/date';
 
@@ -33,9 +33,6 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
   
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
-  const [newTag, setNewTag] = useState('');
-  const [editingSubGoalId, setEditingSubGoalId] = useState<string | null>(null);
-  const [editSubGoalTitle, setEditSubGoalTitle] = useState('');
 
   const activeSubGoal = goal.subGoals.find(sg => sg.id === activeSubGoalId);
   const todayStr = getLocalDateKey();
@@ -158,28 +155,6 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
     }
   };
 
-  const startEditSubGoal = (sg: SubGoal, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingSubGoalId(sg.id);
-    setEditSubGoalTitle(sg.title);
-  };
-
-  const cancelEditSubGoal = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setEditingSubGoalId(null);
-    setEditSubGoalTitle('');
-  };
-
-  const saveEditSubGoal = (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const nextTitle = editSubGoalTitle.trim();
-    if (!nextTitle) return;
-    const updatedSubGoals = goal.subGoals.map(sg => sg.id === id ? { ...sg, title: nextTitle } : sg);
-    onUpdateGoal({ ...goal, subGoals: updatedSubGoals });
-    setEditingSubGoalId(null);
-    setEditSubGoalTitle('');
-  };
-
   const handleAddLog = () => {
     if (!logInput.trim() || !activeSubGoalId) return;
     
@@ -213,19 +188,6 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
     onUpdateGoal({ ...goal, retrospective: text });
   };
 
-  const addTag = () => {
-    const t = newTag.trim();
-    if (!t) return;
-    const next = Array.from(new Set([...(goal.tags || []), t]));
-    onUpdateGoal({ ...goal, tags: next });
-    setNewTag('');
-  };
-
-  const removeTag = (tag: string) => {
-    const next = (goal.tags || []).filter(t => t !== tag);
-    onUpdateGoal({ ...goal, tags: next });
-  };
-
   const completedCount = goal.subGoals.filter(s => s.isCompleted).length;
   const progress = goal.subGoals.length ? Math.round((completedCount / goal.subGoals.length) * 100) : 0;
 
@@ -244,7 +206,7 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                <>
                  <div className="flex justify-between items-start mb-2">
                    <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded-md inline-block">
-                     {goal.source === 'calendar' ? '日历待办' : QuadrantLabels[goal.quadrant]}
+                     {QuadrantLabels[goal.quadrant]}
                    </span>
                    <button 
                      onClick={() => setIsEditing(true)}
@@ -324,7 +286,7 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                   onDragOver={handleDragOverSubGoal}
                   onDrop={(e) => handleDropSubGoal(e, sg.id)}
                   onClick={() => setActiveSubGoalId(sg.id)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 group
+                  className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 group
                     ${activeSubGoalId === sg.id 
                       ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200 shadow-sm' 
                       : 'bg-white border-gray-100 hover:border-indigo-100 hover:bg-slate-50'}`}
@@ -343,28 +305,9 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                   </button>
                   
                   <div className="flex-1 min-w-0">
-                    {editingSubGoalId === sg.id ? (
-                      <input
-                        value={editSubGoalTitle}
-                        onChange={(e) => setEditSubGoalTitle(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            saveEditSubGoal(sg.id);
-                          } else if (e.key === 'Escape') {
-                            e.preventDefault();
-                            cancelEditSubGoal();
-                          }
-                        }}
-                        className="w-full text-sm font-medium text-gray-800 border border-indigo-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        autoFocus
-                      />
-                    ) : (
-                      <p className={`text-sm font-medium whitespace-normal break-words ${sg.isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                        {sg.title}
-                      </p>
-                    )}
+                    <p className={`text-sm font-medium truncate ${sg.isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                      {sg.title}
+                    </p>
                   </div>
 
                   <button
@@ -377,34 +320,6 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
                   >
                     {isAssignedToday ? <Sun size={16} fill="currentColor" /> : <Sun size={16} />}
                   </button>
-
-                  {/* Edit / Save controls */}
-                  {editingSubGoalId === sg.id ? (
-                    <>
-                      <button
-                        onClick={(e) => saveEditSubGoal(sg.id, e)}
-                        className="p-1.5 rounded-lg transition-colors shrink-0 text-indigo-600 hover:bg-indigo-50"
-                        title="保存子目标标题"
-                      >
-                        <Check size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => cancelEditSubGoal(e)}
-                        className="p-1.5 rounded-lg transition-colors shrink-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                        title="取消编辑"
-                      >
-                        <X size={16} />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={(e) => startEditSubGoal(sg, e)}
-                      className="p-1.5 rounded-lg transition-colors shrink-0 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
-                      title="编辑子目标标题"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                  )}
 
                   <button
                     onClick={(e) => handleDeleteSubGoal(sg.id, e)}
@@ -560,49 +475,6 @@ export const GoalDetail: React.FC<Props> = ({ goal, onBack, onUpdateGoal }) => {
              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-gray-800">复盘总结</h3>
              </div>
-
-             {/* Tags */}
-             <div className="mb-3">
-               <div className="flex items-center justify-between mb-2">
-                 <p className="text-xs font-semibold text-gray-600">标签</p>
-               </div>
-               <div className="flex gap-2">
-                 <input
-                   value={newTag}
-                   onChange={(e) => setNewTag(e.target.value)}
-                   onKeyDown={(e) => {
-                     if (e.key === 'Enter') {
-                       e.preventDefault();
-                       addTag();
-                     }
-                   }}
-                   placeholder="添加标签（例如：沟通/效率/专注）"
-                   className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50 focus:bg-white"
-                 />
-                 <button
-                   onClick={addTag}
-                   disabled={!newTag.trim()}
-                   className="px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-medium"
-                 >
-                   添加
-                 </button>
-               </div>
-               {(goal.tags || []).length > 0 && (
-                 <div className="flex flex-wrap gap-2 mt-2">
-                   {(goal.tags || []).map(tag => (
-                     <button
-                       key={tag}
-                       onClick={() => removeTag(tag)}
-                       className="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100"
-                       title="点击删除标签"
-                     >
-                       {tag} ×
-                     </button>
-                   ))}
-                 </div>
-               )}
-             </div>
-
              <textarea 
                 value={goal.retrospective || ''}
                 onChange={(e) => handleUpdateRetrospective(e.target.value)}

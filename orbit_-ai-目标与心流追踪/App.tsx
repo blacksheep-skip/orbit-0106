@@ -47,28 +47,7 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('orbit_goals');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved) as Goal[];
-        // Migration: older data may not have `source`. Try to infer calendar-created tasks
-        // so they don't show up in Matrix quadrants.
-        const inferCalendarSource = (g: Goal): boolean => {
-          if (g.source === 'calendar') return true;
-          // Heuristic: calendar tasks are usually single-subGoal items with assignedDate,
-          // no retrospective, and created in Schedule quadrant.
-          const hasAssigned = g.subGoals?.some(sg => !!sg.assignedDate);
-          const single = (g.subGoals?.length || 0) === 1;
-          const noRetro = !(g.retrospective && g.retrospective.trim());
-          const schedule = g.quadrant === MatrixQuadrant.Schedule;
-          const sub = g.subGoals?.[0];
-          const logsEmpty = !sub || !sub.logs || sub.logs.length === 0;
-          const likelyPlaceholder = g.title === '计划任务' || g.description === '' || (sub && sub.title !== g.title);
-          return !!(hasAssigned && single && noRetro && schedule && logsEmpty && likelyPlaceholder);
-        };
-
-        return parsed.map(g => {
-          if (!g.source && inferCalendarSource(g)) return { ...g, source: 'calendar' };
-          if (!g.source) return { ...g, source: 'manual' };
-          return g;
-        });
+        return JSON.parse(saved);
       } catch (e) {
         return INITIAL_GOALS;
       }
@@ -101,7 +80,6 @@ const App: React.FC = () => {
       quadrant: newQuadrant,
       deadline: new Date(Date.now() + 86400000 * 7).toISOString(), // Default 1 week
       subGoals: [],
-      source: 'manual',
       createdAt: Date.now()
     };
 
@@ -183,41 +161,6 @@ const App: React.FC = () => {
     handleUpdateGoal({ ...goal, subGoals: updatedSubGoals });
   };
 
-  const handleDeferSubGoalToTomorrow = (goalId: string, subGoalId: string) => {
-    const todayKey = getLocalDateKey();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowKey = getLocalDateKey(tomorrow);
-
-    // Find current max index for tomorrow so we can append
-    let maxIndex = 0;
-    goals.forEach(g => {
-      g.subGoals.forEach(sg => {
-        if (sg.assignedDate === tomorrowKey && (sg.todayIndex || 0) > maxIndex) {
-          maxIndex = sg.todayIndex || 0;
-        }
-      });
-    });
-
-    setGoals(goals.map(g => {
-      if (g.id !== goalId) return g;
-      return {
-        ...g,
-        subGoals: g.subGoals.map(sg => {
-          if (sg.id !== subGoalId) return sg;
-          // Only defer if it is scheduled for today or earlier and not completed
-          const assigned = sg.assignedDate;
-          if (!assigned || assigned > todayKey || sg.isCompleted) return sg;
-          return {
-            ...sg,
-            assignedDate: tomorrowKey,
-            todayIndex: maxIndex + 1
-          };
-        })
-      };
-    }));
-  };
-
   const handleToggleSubGoalInToday = (goalId: string, subGoalId: string) => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
@@ -236,28 +179,6 @@ const App: React.FC = () => {
     });
 
     handleUpdateGoal({ ...goal, subGoals: updatedSubGoals });
-  };
-
-  const handleAddLogToSubGoal = (goalId: string, subGoalId: string, content: string) => {
-    const text = content.trim();
-    if (!text) return;
-    const newLog = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      content: text,
-      mood: 'neutral' as const
-    };
-
-    setGoals(goals.map(g => {
-      if (g.id !== goalId) return g;
-      return {
-        ...g,
-        subGoals: g.subGoals.map(sg => {
-          if (sg.id !== subGoalId) return sg;
-          return { ...sg, logs: [...(sg.logs || []), newLog] };
-        })
-      };
-    }));
   };
 
   const handleUpdateTodayOrder = (items: { goalId: string, subGoalId: string, newIndex: number }[]) => {
@@ -312,7 +233,6 @@ const App: React.FC = () => {
       description: desc || '',
       quadrant: MatrixQuadrant.Schedule,
       deadline: new Date(dateKey + 'T23:59:59').toISOString(),
-      source: 'calendar',
       subGoals: [{
         id: crypto.randomUUID(),
         title: title,
@@ -325,39 +245,6 @@ const App: React.FC = () => {
     };
 
     setGoals([...goals, newGoal]);
-  };
-
-  // Update a scheduled task (calendar-created task)
-  const handleUpdateScheduledTask = (
-    goalId: string,
-    subGoalId: string,
-    updates: { title?: string; desc?: string; assignedDate?: string }
-  ) => {
-    setGoals(goals.map(g => {
-      if (g.id !== goalId) return g;
-      return {
-        ...g,
-        description: updates.desc !== undefined ? updates.desc : g.description,
-        subGoals: g.subGoals.map(sg => {
-          if (sg.id !== subGoalId) return sg;
-          return {
-            ...sg,
-            title: updates.title !== undefined ? updates.title : sg.title,
-            assignedDate: updates.assignedDate !== undefined ? updates.assignedDate : sg.assignedDate
-          };
-        })
-      };
-    }));
-  };
-
-  // Delete a scheduled task (remove sub-goal; if goal becomes empty, remove it)
-  const handleDeleteScheduledTask = (goalId: string, subGoalId: string) => {
-    setGoals(goals.flatMap(g => {
-      if (g.id !== goalId) return [g];
-      const nextSubGoals = g.subGoals.filter(sg => sg.id !== subGoalId);
-      if (nextSubGoals.length === 0) return [];
-      return [{ ...g, subGoals: nextSubGoals }];
-    }));
   };
 
   // --- CSV Import Logic ---
@@ -529,8 +416,8 @@ const App: React.FC = () => {
             <main className="flex-1 overflow-y-auto p-4 md:p-6">
               {currentView === 'matrix' && (
                 <EisenhowerMatrix 
-                  goals={goals.filter(g => (g.source ?? 'manual') !== 'calendar' && (!g.retrospective || g.retrospective.trim() === ''))}
-                  completedGoals={goals.filter(g => (g.source ?? 'manual') !== 'calendar' && g.retrospective && g.retrospective.trim() !== '')}
+                  goals={goals.filter(g => !g.retrospective || g.retrospective.trim() === '')}
+                  completedGoals={goals.filter(g => g.retrospective && g.retrospective.trim() !== '')}
                   onSelectGoal={(g) => setSelectedGoalId(g.id)}
                   onDeleteGoal={handleDeleteGoal}
                   onAddToToday={handleAddToToday}
@@ -541,19 +428,12 @@ const App: React.FC = () => {
                   goals={goals} 
                   onToggleSubGoal={handleToggleSubGoalInToday}
                   onRemoveSubGoalFromToday={handleRemoveSubGoalFromToday}
-                  onDeferToTomorrow={handleDeferSubGoalToTomorrow}
-                  onQuickAddLog={handleAddLogToSubGoal}
                   onOpenDetail={(g) => setSelectedGoalId(g.id)}
                   onUpdateOrder={handleUpdateTodayOrder}
                 />
               )}
               {currentView === 'calendar' && (
-                 <CalendarView
-                   goals={goals}
-                   onAddScheduledTask={handleAddScheduledTask}
-                   onUpdateScheduledTask={handleUpdateScheduledTask}
-                   onDeleteScheduledTask={handleDeleteScheduledTask}
-                 />
+                <CalendarView goals={goals} onAddScheduledTask={handleAddScheduledTask} />
               )}
               {currentView === 'settings' && (
                 <SettingsView 

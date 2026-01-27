@@ -89,8 +89,7 @@ const ExpandedQuadrantView: React.FC<{
     const q = query.trim().toLowerCase();
     if (!q) return goals;
     return goals.filter(g => {
-      const tags = (g.tags || []).join(' ');
-      const hay = `${g.title}\n${g.description}\n${g.retrospective || ''}\n${tags}`.toLowerCase();
+      const hay = `${g.title}\n${g.description}\n${g.retrospective || ''}`.toLowerCase();
       return hay.includes(q);
     });
   }, [enableSearch, goals, query]);
@@ -169,15 +168,6 @@ const ExpandedQuadrantView: React.FC<{
                     <h4 className="font-semibold text-gray-800 text-base mb-1">{goal.title}</h4>
                     {goal.description && (
                       <p className="text-sm text-gray-600 line-clamp-2">{goal.description}</p>
-                    )}
-                    {(goal.tags || []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {(goal.tags || []).slice(0, 6).map(tag => (
-                          <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
                     )}
                   </div>
                   {/* 按钮区域 - 确保始终显示且不被压缩 */}

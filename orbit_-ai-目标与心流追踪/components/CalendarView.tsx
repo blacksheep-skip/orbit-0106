@@ -1,22 +1,19 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Goal, SubGoal } from '../types';
-import { ChevronLeft, ChevronRight, CheckCircle2, Download, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, Download, Plus } from 'lucide-react';
 import { getLocalDateKey } from '../utils/date';
 
 interface Props {
   goals: Goal[];
   onAddScheduledTask: (dateKey: string, title: string, desc?: string) => void;
-  onUpdateScheduledTask: (goalId: string, subGoalId: string, updates: { title?: string; desc?: string; assignedDate?: string }) => void;
-  onDeleteScheduledTask: (goalId: string, subGoalId: string) => void;
 }
 
-export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpdateScheduledTask, onDeleteScheduledTask }) => {
+export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editing, setEditing] = useState<{ goalId: string; subGoalId: string } | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   // Helper to normalize date to YYYY-MM-DD for comparison (using local time)
@@ -47,13 +44,13 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpd
 
   // Pending scheduled tasks by date (未完成且有 assignedDate)
   const scheduledMap = useMemo(() => {
-    const map = new Map<string, { goalId: string; subGoalId: string; goalTitle: string; goalDesc?: string; subGoal: SubGoal }[]>();
+    const map = new Map<string, { goalTitle: string, subGoal: SubGoal }[]>();
     goals.forEach(goal => {
       goal.subGoals.forEach(sg => {
         if (!sg.isCompleted && sg.assignedDate) {
           const dateKey = sg.assignedDate;
           const existing = map.get(dateKey) || [];
-          existing.push({ goalId: goal.id, subGoalId: sg.id, goalTitle: goal.title, goalDesc: goal.description, subGoal: sg });
+          existing.push({ goalTitle: goal.title, subGoal: sg });
           map.set(dateKey, existing);
         }
       });
@@ -184,26 +181,26 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpd
                  <Plus size={16} />
                </button>
              )}
-              <div className="flex items-center gap-1">
-                {scheduled.length > 0 && (
-                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded-full">
-                    待 {scheduled.length}
-                  </span>
-                )}
-                {tasks.length > 0 && (
-                  <span className="text-[10px] font-bold text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">
-                    完 {tasks.length}
-                  </span>
-                )}
-              </div>
+             <div className="flex items-center gap-1">
+               {scheduled.length > 0 && (
+                 <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded-full">
+                   待 {scheduled.length}
+                 </span>
+               )}
+               {tasks.length > 0 && (
+                 <span className="text-[10px] font-bold text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">
+                   完 {tasks.length}
+                 </span>
+               )}
+             </div>
            </div>
            
            <div className="space-y-1 overflow-hidden">
-              {scheduled.slice(0, 1).map((t, idx) => (
-                <div key={`s-${idx}`} className="text-[10px] truncate text-indigo-600 bg-indigo-50 px-1 rounded">
-                  {t.subGoal.title}
-                </div>
-              ))}
+             {scheduled.slice(0, 1).map((t, idx) => (
+               <div key={`s-${idx}`} className="text-[10px] truncate text-indigo-600 bg-indigo-50 px-1 rounded">
+                 {t.subGoal.title}
+               </div>
+             ))}
              {tasks.slice(0, 2).map((t, idx) => (
                <div key={idx} className="text-[10px] truncate text-gray-500 bg-gray-100 px-1 rounded">
                  {t.subGoal.title}
@@ -223,34 +220,12 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpd
   const selectedDateTasks = completedMap.get(selectedDateKey) || [];
   const selectedScheduled = scheduledMap.get(selectedDateKey) || [];
 
-  const openCreateModal = () => {
-    setEditing(null);
-    setNewTaskTitle('');
-    setNewTaskDesc('');
-    setIsAddModalOpen(true);
-  };
-
-  const openEditModal = (item: { goalId: string; subGoalId: string; goalDesc?: string; subGoal: SubGoal }) => {
-    setEditing({ goalId: item.goalId, subGoalId: item.subGoalId });
-    setNewTaskTitle(item.subGoal.title);
-    setNewTaskDesc(item.goalDesc || '');
-    setIsAddModalOpen(true);
-  };
-
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    if (editing) {
-      onUpdateScheduledTask(editing.goalId, editing.subGoalId, {
-        title: newTaskTitle.trim(),
-        desc: newTaskDesc.trim() || ''
-      });
-    } else {
-      onAddScheduledTask(selectedDateKey, newTaskTitle.trim(), newTaskDesc.trim() || undefined);
-    }
+    onAddScheduledTask(selectedDateKey, newTaskTitle.trim(), newTaskDesc.trim() || undefined);
     setNewTaskTitle('');
     setNewTaskDesc('');
-    setEditing(null);
     setIsAddModalOpen(false);
   };
 
@@ -330,13 +305,7 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpd
          {/* Hint for mobile */}
          <div className="px-4 shrink-0 border-b border-gray-100 pb-3 mb-3">
            <p className="text-xs text-gray-500">
-             选中日期后，点击日历格子右上角的 <span className="inline-flex items-center justify-center w-5 h-5 bg-indigo-600 text-white rounded-full align-middle mx-1">+</span> 添加待办，或点击这里：
-             <button
-               onClick={openCreateModal}
-               className="ml-2 inline-flex items-center gap-1 text-indigo-600 font-medium"
-             >
-               <Plus size={14} /> 新增
-             </button>
+             选中日期后，点击日历格子右上角的 <span className="inline-flex items-center justify-center w-5 h-5 bg-indigo-600 text-white rounded-full align-middle mx-1">+</span> 添加待办
            </p>
          </div>
 
@@ -352,37 +321,12 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpd
                   <p className="text-xs font-semibold text-indigo-600 mb-2">待办</p>
                   <div className="space-y-2">
                     {selectedScheduled.map((item, idx) => (
-                      <div key={`plan-${idx}`} className="relative flex gap-3 items-start bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                      <div key={`plan-${idx}`} className="flex gap-3 items-start bg-indigo-50 border border-indigo-100 rounded-xl p-3">
                         <span className="w-2 h-2 rounded-full bg-indigo-500 mt-1" />
-                        <div className="min-w-0 pr-16">
-                          <p className="text-sm font-medium text-gray-800 truncate">{item.subGoal.title}</p>
-                          {item.goalDesc && (
-                            <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{item.goalDesc}</p>
-                          )}
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{item.subGoal.title}</p>
+                          {item.goalTitle && <p className="text-xs text-gray-500 mt-0.5">{item.goalTitle}</p>}
                           <p className="text-[10px] text-gray-400 mt-1">计划于此日显示在“今日待办”</p>
-                        </div>
-
-                        <div className="absolute top-2 right-2 flex items-center gap-1">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            className="p-2 rounded-lg bg-white/70 hover:bg-white text-gray-500 hover:text-indigo-600 shadow-sm"
-                            aria-label="编辑待办"
-                            title="编辑"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm('确定要删除这个待办吗？')) {
-                                onDeleteScheduledTask(item.goalId, item.subGoalId);
-                              }
-                            }}
-                            className="p-2 rounded-lg bg-white/70 hover:bg-white text-gray-500 hover:text-red-600 shadow-sm"
-                            aria-label="删除待办"
-                            title="删除"
-                          >
-                            <Trash2 size={16} />
-                          </button>
                         </div>
                       </div>
                     ))}
@@ -421,13 +365,10 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpd
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-gray-900">
-                {editing ? '编辑待办' : '添加到'} {selectedDate.toLocaleDateString('zh-CN')}
+                添加到 {selectedDate.toLocaleDateString('zh-CN')}
               </h3>
               <button
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setEditing(null);
-                }}
+                onClick={() => setIsAddModalOpen(false)}
                 className="p-2 rounded-full hover:bg-gray-100"
                 aria-label="关闭"
               >
@@ -453,7 +394,7 @@ export const CalendarView: React.FC<Props> = ({ goals, onAddScheduledTask, onUpd
                 disabled={!newTaskTitle.trim()}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
               >
-                <Plus size={18} /> {editing ? '保存' : '添加'}
+                <Plus size={18} /> 添加
               </button>
             </form>
           </div>
